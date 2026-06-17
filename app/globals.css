@@ -525,7 +525,11 @@ p {
 .stop--end .stop__card { grid-column: 3; }
 .stop__card,
 .stop .marker { min-width: 0; }
-.stop .marker { grid-column: 2; justify-self: center; align-self: center; }
+/* Pin both to row 1 so grid auto-placement can't push the marker to a 2nd row
+   on the alternating (column-3 / mobile column-1) side — which would offset the
+   number from its card vertically. */
+.stop__card { grid-row: 1; }
+.stop .marker { grid-column: 2; grid-row: 1; justify-self: center; align-self: center; }
 
 /* Connector: a short line from the card's near edge toward the channel. */
 .stop__card {
