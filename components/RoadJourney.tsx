@@ -98,7 +98,8 @@ export function RoadJourney() {
             pts.push({ x: cx + side * amp, y: ymid });
           }
         }
-        pts.push({ x: cx, y: Math.min(H, anchors[anchors.length - 1].y + lead0) });
+        // NOTE: no trailing point — the path FINISHES exactly on the last
+        // marker so the line + traveler land on the final number.
 
         // Smooth through nodes with vertical tangents (cp shares x with node).
         let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
@@ -203,11 +204,15 @@ export function RoadJourney() {
         );
       }
 
-      // Main draw: scrubbed; traveler rides the viewport centre as the road passes.
+      // Main draw: scrubbed. End is the LAST marker (not the road bottom, which
+      // a short footer can't push to centre) so the line + traveler always reach
+      // and finish on the final number. 80% keeps it within reachable scroll.
+      const lastMarkerEl = markerEls().at(-1) ?? road;
       ScrollTrigger.create({
         trigger: road,
         start: "top center",
-        end: "bottom center",
+        endTrigger: lastMarkerEl,
+        end: "center 80%",
         scrub: true,
         invalidateOnRefresh: true,
         onRefresh: buildPath,

@@ -91,6 +91,7 @@ client edits in one place. All copy is placeholder and marked `[محتوى مب�
 | What | Where in `content.ts` |
 | --- | --- |
 | Hero name / wildcard line / intro | `ar.hero`, `en.hero` |
+| **Hero portrait (photo)** | overwrite `public/ahmad-qattan.jpg` (same filename, square works best). Path lives in `hero.portrait.src`; a monogram shows if the file is missing. |
 | Each milestone (About → Contact) | `ar.stops[]`, `en.stops[]` |
 | **Think Equality URL** | the `gateway` stop → `url` (currently **`"#"`**) |
 | **WhatsApp number / link** | the `contact` stop → `whatsapp.number` / `whatsapp.href` |

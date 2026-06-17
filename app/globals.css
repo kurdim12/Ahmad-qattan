@@ -285,13 +285,79 @@ p {
   min-height: 100svh;
   display: grid;
   align-content: center;
-  gap: 1.5rem;
+  justify-items: start;
+  gap: 2.5rem;
   padding-block: 7rem 4rem;
   padding-inline: clamp(1.25rem, 6vw, 5rem);
-  max-width: 64rem;
+  max-width: 68rem;
   margin-inline: auto;
   text-align: start;
   overflow: hidden;
+}
+.hero__content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.25rem;
+  justify-items: start;
+}
+.hero__portrait {
+  position: relative;
+  z-index: 1;
+  inline-size: clamp(10rem, 24vw, 15rem);
+  aspect-ratio: 1;
+  justify-self: center;
+}
+.hero__portrait::before {
+  content: "";
+  position: absolute;
+  inset: -0.6rem;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--white) 75%, transparent),
+    transparent 70%
+  );
+  z-index: 0;
+}
+.hero__img,
+.hero__monogram {
+  position: relative;
+  z-index: 1;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 999px;
+  border: 4px solid var(--gold-deep);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
+  object-fit: cover;
+  object-position: center;
+  background: var(--gold-pale);
+}
+.hero__monogram {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-lateef), serif;
+  font-weight: 800;
+  font-size: clamp(3rem, 10vw, 5rem);
+  color: var(--ink);
+  background: radial-gradient(circle at 50% 35%, var(--gold-soft), var(--gold-deep));
+}
+.lang-en .hero__monogram {
+  font-family: var(--font-fraunces), serif;
+}
+@media (min-width: 768px) {
+  .hero {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 3.5rem;
+  }
+  .hero__content {
+    grid-column: 1;
+  }
+  .hero__portrait {
+    grid-column: 2;
+    justify-self: end;
+  }
 }
 .hero__sky {
   position: absolute;
@@ -306,10 +372,6 @@ p {
   );
   pointer-events: none;
   z-index: 0;
-}
-.hero > * {
-  position: relative;
-  z-index: 1;
 }
 .hero__eyebrow {
   font-size: 0.95rem;
@@ -404,8 +466,10 @@ p {
 
 .traveler {
   position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
+  /* Physical top/left on purpose: the traveler is positioned in the SVG's
+     coordinate space (always left-origin), so it must NOT flip with dir. */
+  top: 0;
+  left: 0;
   width: 1.5rem;
   height: 1.5rem;
   display: grid;

@@ -105,6 +105,9 @@ export interface LocaleContent {
     wildcard: string;
     intro: string;
     cta: string;
+    /** Hero portrait. Drop the real photo at public/ahmad-qattan.jpg (same name,
+     *  square works best) — no code change needed. Falls back to a monogram. */
+    portrait: { src: string; alt: string };
   };
   stops: Stop[];
 }
@@ -147,6 +150,7 @@ const ar: LocaleContent = {
     intro:
       "[محتوى مبدئي] جملة تعريفية قصيرة عن أحمد: من يكون، وما الذي يجمع بين كل ما يفعله. تُكتب هنا بضع كلمات تمهّد للرحلة على الطريق.",
     cta: "اكتشف القصة",
+    portrait: { src: "/ahmad-qattan.jpg", alt: "أحمد قطان" },
   },
   stops: [
     {
@@ -314,6 +318,7 @@ const en: LocaleContent = {
     intro:
       "[Placeholder] A short introductory line about Ahmad: who he is, and what unites everything he does. A few words here set up the journey down the road.",
     cta: "Explore the story",
+    portrait: { src: "/ahmad-qattan.jpg", alt: "Ahmad Qattan" },
   },
   stops: [
     {
