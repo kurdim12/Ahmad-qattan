@@ -44,9 +44,16 @@ Node ≥ 18.18.
 
 ### Deploy
 
-- **Vercel:** import the repo — it builds and serves `./out` automatically.
-- **Cloudflare Pages / any static host:** build command `npm run build`,
-  output directory `out`.
+This is a fully static export (`output: "export"` → `./out`), so it deploys as
+plain static assets — no server runtime.
+
+- **Cloudflare (Workers static assets):** `wrangler.jsonc` is committed and points
+  `assets.directory` at `./out`. Build with `npm run build`, deploy with
+  `npx wrangler deploy`. The committed config also stops wrangler's framework
+  auto-config from invoking OpenNext (which targets SSR builds and fails on a
+  static export). Change the Worker `name` in `wrangler.jsonc` if needed.
+- **Cloudflare Pages:** build command `npm run build`, output directory `out`.
+- **Vercel / any static host:** import the repo (output directory `out`).
 
 ---
 
