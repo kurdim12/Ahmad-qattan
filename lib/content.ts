@@ -35,6 +35,8 @@ export interface Scene {
   asset: SceneAsset;
   /** Fitted SVG path segment (d) over the painted road — filled via ?fit=1. */
   path?: string;
+  /** Optional secondary fitted segment (the fork's branch through the arch). */
+  branch?: string;
   live?: LiveBit[];
   title: L;
   body?: L[];

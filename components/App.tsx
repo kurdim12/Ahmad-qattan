@@ -1,19 +1,43 @@
 "use client";
 
+import { useEffect } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 import { content, scenes } from "@/lib/content";
 import { LocaleProvider, useLocale } from "@/lib/locale";
-import { formatKm } from "@/lib/numerals";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 import { LocaleToggle } from "./LocaleToggle";
+import { ScrollProgress } from "./ScrollProgress";
+import { Preloader } from "./engine/Preloader";
+import { RoadLine } from "./engine/RoadLine";
+import { SkyCanvas } from "./engine/SkyCanvas";
 
-/**
- * P0 shell — proves the night before the engine lands: page bg == --night,
- * grain + vignette riding on top of everything, Amiri carrying the name,
- * Rakkas carrying a km numeral. Scenes replace the stage from P3 on.
- */
+gsap.registerPlugin(ScrollTrigger);
+
+/** Smooth scroll + motion flag. No-JS and reduced-motion stay native. */
+function useMotionShell(reduced: boolean) {
+  useEffect(() => {
+    if (reduced) return;
+    document.documentElement.classList.add("has-motion");
+    const lenis = new Lenis({ lerp: 0.11 });
+    lenis.on("scroll", ScrollTrigger.update);
+    const raf = (t: number) => lenis.raf(t * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+    return () => {
+      gsap.ticker.remove(raf);
+      lenis.destroy();
+      document.documentElement.classList.remove("has-motion");
+    };
+  }, [reduced]);
+}
+
 function Shell() {
   const { locale } = useLocale();
+  const reduced = useReducedMotion();
   const c = content[locale];
-  const hero = scenes[0];
+  useMotionShell(reduced);
 
   return (
     <>
@@ -21,22 +45,35 @@ function Shell() {
         {c.ui.skip}
       </a>
       <LocaleToggle />
+      <Preloader />
+      <SkyCanvas />
 
       <main id="main">
-        <section className="night-stage" aria-label={hero.title[locale]}>
-          <p className="eyebrow">KM 00 — THE NIGHT ROAD</p>
-          <h1 className="night-stage__name">{hero.title[locale]}</h1>
-          <p className="km-display night-stage__km" dir="rtl">
-            {c.ui.kmWord} {formatKm(0, locale, 1)}
-          </p>
-          {hero.body?.map((b, i) => (
-            <p key={i} className="night-stage__tag">
-              {b[locale]}
-            </p>
+        <div id="road-world" className="road-world">
+          <RoadLine />
+          {/* P1 scaffold: geometry-only blocks; scenes replace these in P3/P4. */}
+          {scenes.map((s, i) => (
+            <div key={s.key}>
+              <section
+                data-scene-key={s.key}
+                className="scene scene--scaffold"
+                aria-label={s.title[locale]}
+              >
+                <div className="scene__card">
+                  <p className="eyebrow">
+                    KM {String(s.km).padStart(2, "0")} — CH.
+                    {String(i).padStart(2, "0")}
+                  </p>
+                  <h2 className="title">{s.title[locale]}</h2>
+                </div>
+              </section>
+              {i < scenes.length - 1 && <div className="void-gap" aria-hidden />}
+            </div>
           ))}
-        </section>
-        <div className="night-void" aria-hidden />
+        </div>
       </main>
+
+      <ScrollProgress />
 
       {/* The two unifiers — always the last layers, above everything. */}
       <div className="grain" aria-hidden />
