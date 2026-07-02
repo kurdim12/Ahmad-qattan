@@ -398,6 +398,65 @@ html.is-loading {
 }
 
 /* =========================================================================
+   FITTER (?fit=1) — dev overlay for fitting the line to painted roads.
+   ========================================================================= */
+.fitter {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: var(--night);
+}
+.fitter {
+  cursor: crosshair;
+}
+.fitter__stage {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.fitter__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.fitter__panel {
+  position: absolute;
+  inset-block-end: 0.8rem;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  background: rgba(10, 8, 5, 0.92);
+  border: 1px solid var(--gold);
+  border-radius: 0.6rem;
+  color: var(--bone);
+  font-size: 0.8rem;
+}
+.fitter__panel textarea {
+  width: 16rem;
+  background: #050403;
+  color: var(--hot);
+  border: 1px solid #333;
+  font-size: 0.65rem;
+}
+.fitter__panel button,
+.fitter__panel select {
+  background: var(--terrain);
+  color: var(--bone);
+  border: 1px solid var(--gold);
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+/* =========================================================================
    REDUCED MOTION — static world: no grain drift, no scroll hijack; the
    line renders fully drawn (engine reads the same media query in JS).
    ========================================================================= */

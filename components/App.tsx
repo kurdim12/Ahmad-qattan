@@ -9,6 +9,7 @@ import { LocaleProvider, useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { LocaleToggle } from "./LocaleToggle";
 import { ScrollProgress } from "./ScrollProgress";
+import { Fitter } from "./engine/Fitter";
 import { Preloader } from "./engine/Preloader";
 import { RoadLine } from "./engine/RoadLine";
 import { SkyCanvas } from "./engine/SkyCanvas";
@@ -74,6 +75,7 @@ function Shell() {
       </main>
 
       <ScrollProgress />
+      <Fitter />
 
       {/* The two unifiers — always the last layers, above everything. */}
       <div className="grain" aria-hidden />
