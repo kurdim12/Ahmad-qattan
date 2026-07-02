@@ -1,23 +1,36 @@
 import type { Metadata } from "next";
-import { Lateef, Fraunces, Inter } from "next/font/google";
+import {
+  Amiri,
+  IBM_Plex_Sans_Arabic,
+  Rakkas,
+  Space_Grotesk,
+} from "next/font/google";
 import { content } from "@/lib/content";
 import "./globals.css";
 
 // next/font → self-hosted, font-display:swap, zero layout shift.
-const lateef = Lateef({
-  subsets: ["arabic"],
-  weight: ["400", "500", "700", "800"],
-  variable: "--font-lateef",
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["700"],
+  variable: "--font-amiri",
   display: "swap",
 });
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
+const plex = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-plex",
   display: "swap",
 });
-const inter = Inter({
+const rakkas = Rakkas({
+  subsets: ["arabic", "latin"],
+  weight: ["400"],
+  variable: "--font-rakkas",
+  display: "swap",
+});
+const grotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500"],
+  variable: "--font-grotesk",
   display: "swap",
 });
 
@@ -47,13 +60,20 @@ export const metadata: Metadata = {
     url: SITE_URL,
     locale: "ar_AR",
     alternateLocale: ["en_US"],
-    images: [{ url: "/og.svg", width: 1200, height: 630, alt: meta.ogTitle }],
+    images: [
+      {
+        url: "/assets/og-cover.png",
+        width: 1200,
+        height: 630,
+        alt: meta.ogTitle,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: meta.ogTitle,
     description: meta.ogDescription,
-    images: ["/og.svg"],
+    images: ["/assets/og-cover.png"],
   },
   robots: { index: true, follow: true },
 };
@@ -74,7 +94,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ar" dir="rtl" className="lang-ar">
-      <body className={`${lateef.variable} ${fraunces.variable} ${inter.variable}`}>
+      <body
+        className={`${amiri.variable} ${plex.variable} ${rakkas.variable} ${grotesk.variable}`}
+      >
         {children}
         <script
           type="application/ld+json"

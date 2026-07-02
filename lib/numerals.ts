@@ -1,17 +1,24 @@
 import type { Locale } from "./content";
 
-const EASTERN = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"] as const;
+/**
+ * Locale-aware integer formatting. AR uses Arabic-Indic digits via
+ * Intl ("ar-JO-u-nu-arab"), EN uses Western digits — per the style bible,
+ * never via manual digit swapping in rendered copy.
+ */
+const FMT: Record<Locale, Intl.NumberFormat> = {
+  ar: new Intl.NumberFormat("ar-JO-u-nu-arab", { useGrouping: false }),
+  en: new Intl.NumberFormat("en", { useGrouping: false }),
+};
 
-/** Convert any Western digits in a string to Eastern-Arabic numerals. */
-export function toEastern(value: string | number): string {
-  return String(value).replace(/\d/g, (d) => EASTERN[Number(d)]);
+export function formatNumber(n: number, locale: Locale): string {
+  return FMT[locale].format(n);
 }
 
-/**
- * Format a milestone number for a marker disc.
- * AR → Eastern-Arabic ("٠١"), EN → Western ("01"). Always two digits.
- */
-export function formatStopNumber(n: number, locale: Locale): string {
-  const two = String(n).padStart(2, "0");
-  return locale === "ar" ? toEastern(two) : two;
+/** Odometer reading, zero-padded to three places (٠٠٧ / 007). */
+export function formatKm(n: number, locale: Locale, pad = 3): string {
+  const int = Math.max(0, Math.round(n));
+  const padded = String(int).padStart(pad, "0");
+  return locale === "ar"
+    ? padded.replace(/\d/g, (d) => FMT.ar.format(Number(d)))
+    : padded;
 }

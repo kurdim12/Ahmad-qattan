@@ -3,43 +3,35 @@
 @tailwind utilities;
 
 /* =========================================================================
-   THE ROAD — design system + layout (overlap-fix timeline) + interactions.
-   Layout uses LOGICAL properties throughout (inline-start/end, margin-inline,
-   grid columns that follow `dir`) so RTL/LTR mirror correctly.
+   THE NIGHT ROAD — one desert night, one golden line.
+   The page background IS the frame background (--night == frame corners):
+   that equality is what lets every AI-painted frame dissolve into the page.
+   Layout uses LOGICAL properties throughout so RTL/LTR mirror correctly.
    ========================================================================= */
 
 :root {
-  /* Brand — gold + white; dark olive ink for body text only. */
-  --gold: #b7a441;
-  --gold-deep: #8a7a2e;
-  --gold-soft: #ded39a;
-  --gold-pale: #f2edd4;
-  --white: #ffffff;
-  --ink: #2b2712;
-  --ink-soft: #6a6234;
+  /* Locked style-bible tokens. */
+  --night: #0b0906;   /* page bg = image bg — the core trick            */
+  --terrain: #17120b; /* raised ground / cards                          */
+  --gold: #d2a64b;    /* the line                                       */
+  --hot: #f2cb74;     /* light head, glows                              */
+  --bone: #ede3cf;    /* text on night                                  */
+  --dawn: #f3ecdc;    /* fork inversion page bg                         */
+  --ink: #17120c;     /* text on dawn                                   */
 
-  /* Page gradient stops (gold top → white bottom).
-     TUNE THE GOLD INTENSITY by editing --grad-0..2 (see README). */
-  --grad-0: #b7a441;
-  --grad-1: #c4b561;
-  --grad-2: #d6cb8c;
-  --grad-3: #e9e3c2;
-  --grad-4: #f5f1e2;
-  --grad-5: #fcfbf4;
-  --grad-6: #ffffff;
+  /* Live theme slots — the dawn inversion swaps these (JS adds .is-dawn). */
+  --page: var(--night);
+  --text: var(--bone);
 
-  /* Layout rhythm (4px base unit). */
-  --channel: 6rem;       /* 96px central road channel (desktop) */
-  --rail: 3rem;          /* 48px mobile rail */
-  --gutter: 2.5rem;      /* 40px reserved gutter around the channel */
-  --gutter-m: 1rem;      /* 16px gutter on mobile */
-  --stop-min: 15rem;     /* 240px min height per stop (no vertical collisions) */
-  --stop-min-m: 11rem;   /* 176px on mobile */
-  --marker: 2.875rem;    /* 46px marker disc (44–48px) */
-
-  /* Motion. */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
+  color-scheme: dark;
+}
+
+/* Dawn inversion — driven by the fork scene while the arch is in view. */
+html.is-dawn {
+  --page: var(--dawn);
+  --text: var(--ink);
   color-scheme: light;
 }
 
@@ -49,82 +41,81 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   position: relative;
-  min-height: 100vh;
-  color: var(--ink);
-  background: var(--grad-6);
-  font-family: var(--font-lateef), "Segoe UI", serif;
-  font-size: 1.125rem;   /* Arabic body ≈ 18px */
-  line-height: 1.9;
+  min-height: 100svh;
+  background: var(--page);
+  color: var(--text);
+  transition: background-color 1s var(--ease), color 1s var(--ease);
+  font-family: var(--font-plex), "Segoe UI", system-ui, sans-serif;
+  font-weight: 300;
+  font-size: 1.0625rem;
+  line-height: 2;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
 }
 
-/* English: Latin body (Inter) + tighter line-height. */
 .lang-en body {
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 1.0625rem;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
-/* The travelling background — a tall gradient spanning the whole document. */
-.page-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    180deg,
-    var(--grad-0) 0%,
-    var(--grad-1) 12%,
-    var(--grad-2) 28%,
-    var(--grad-3) 46%,
-    var(--grad-4) 64%,
-    var(--grad-5) 82%,
-    var(--grad-6) 100%
-  );
-}
-
-/* Headings — Lateef (AR) / Fraunces (EN). Never letter-space Arabic. */
+/* Titles + the name — Amiri. Never letter-space Arabic. */
 h1,
 h2,
 h3,
-.display {
-  font-family: var(--font-lateef), serif;
+.title {
+  font-family: var(--font-amiri), serif;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
   margin: 0;
-}
-.lang-en h1,
-.lang-en h2,
-.lang-en h3,
-.lang-en .display {
-  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: 0;
 }
 
 p {
   margin: 0;
 }
 
-/* Eastern-Arabic / Latin numerals & phone numbers always read LTR. */
+/* Giant km numerals + the gate word — Rakkas. */
+.km-display {
+  font-family: var(--font-rakkas), var(--font-amiri), serif;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Tiny EN eyebrows ("KM 07 — CH.01") — Space Grotesk. Latin only, so
+   uppercase + tracking are safe here and only here. */
+.eyebrow {
+  font-family: var(--font-grotesk), monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gold) 75%, var(--text));
+  unicode-bidi: isolate;
+  direction: ltr;
+}
+
+/* Numerals / phone numbers always read LTR inside RTL copy. */
 [dir="ltr"] {
   unicode-bidi: isolate;
 }
 
 ::selection {
-  background: var(--gold-soft);
+  background: color-mix(in srgb, var(--gold) 40%, transparent);
+  color: var(--hot);
+}
+html.is-dawn ::selection {
   color: var(--ink);
 }
 
-/* Accessibility — visible focus everywhere. */
 :focus-visible {
-  outline: 3px solid var(--gold-deep);
+  outline: 2px solid var(--hot);
   outline-offset: 3px;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .sr-only {
@@ -139,17 +130,18 @@ p {
   border: 0;
 }
 
-/* Skip link. */
 .skip {
   position: fixed;
-  inset-block-start: 0.5rem;
-  inset-inline-start: 0.5rem;
-  z-index: 100;
+  inset-block-start: 0.6rem;
+  inset-inline-start: 0.6rem;
+  z-index: 200;
   padding: 0.5rem 1rem;
-  background: var(--ink);
-  color: var(--gold-pale);
+  background: var(--terrain);
+  color: var(--hot);
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
   border-radius: 0.5rem;
-  transform: translateY(-150%);
+  text-decoration: none;
+  transform: translateY(-250%);
   transition: transform 0.2s var(--ease);
 }
 .skip:focus {
@@ -157,866 +149,142 @@ p {
 }
 
 /* =========================================================================
-   TOP BAR + scroll progress
+   THE UNIFIERS — one grain, one vignette, always on top of everything.
+   These two layers make disparate frames read as a single filmed world.
    ========================================================================= */
-.topbar {
+.grain {
   position: fixed;
-  inset-block-start: 0;
-  inset-inline: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-block: 0.75rem;
-  padding-inline: clamp(1rem, 4vw, 2.5rem);
-  backdrop-filter: blur(8px);
-  background: color-mix(in srgb, var(--grad-0) 35%, transparent);
-}
-.brand {
-  font-family: var(--font-lateef), serif;
-  font-weight: 800;
-  font-size: 1.25rem;
-  color: var(--ink);
-  text-decoration: none;
-}
-.lang-en .brand {
-  font-family: var(--font-fraunces), serif;
+  inset: -60%;
+  z-index: 120;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.6 0.6 0.6 0 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+  animation: grain-jump 0.9s steps(1, end) infinite;
 }
 
+@keyframes grain-jump {
+  0%   { transform: translate3d(0, 0, 0); }
+  12%  { transform: translate3d(-4%, 3%, 0); }
+  25%  { transform: translate3d(3%, -5%, 0); }
+  37%  { transform: translate3d(-6%, -2%, 0); }
+  50%  { transform: translate3d(5%, 4%, 0); }
+  62%  { transform: translate3d(-2%, 6%, 0); }
+  75%  { transform: translate3d(6%, -3%, 0); }
+  87%  { transform: translate3d(-5%, -6%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 121;
+  pointer-events: none;
+  background: radial-gradient(
+    130% 105% at 50% 42%,
+    transparent 52%,
+    rgba(5, 4, 2, 0.24) 78%,
+    rgba(5, 4, 2, 0.5) 100%
+  );
+}
+
+/* =========================================================================
+   FUSION MASKS — no <img> rectangle ever survives these.
+   A frame is a full-bleed layer whose edges dissolve into var(--page).
+   Tune per scene with the --fuse-* custom properties.
+   ========================================================================= */
+.fuse {
+  -webkit-mask-image: radial-gradient(
+    var(--fuse-size, 120% 90%) at var(--fuse-at, 50% 45%),
+    #000 var(--fuse-solid, 55%),
+    transparent var(--fuse-fade, 82%)
+  );
+  mask-image: radial-gradient(
+    var(--fuse-size, 120% 90%) at var(--fuse-at, 50% 45%),
+    #000 var(--fuse-solid, 55%),
+    transparent var(--fuse-fade, 82%)
+  );
+}
+
+/* Wide scenes: linear top/bottom dissolve instead of the radial pool. */
+.fuse-wide {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 var(--fuse-top, 18%),
+    #000 var(--fuse-bottom, 80%),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 var(--fuse-top, 18%),
+    #000 var(--fuse-bottom, 80%),
+    transparent 100%
+  );
+}
+
+/* =========================================================================
+   MINIMAL CHROME
+   ========================================================================= */
 .locale-toggle {
+  position: fixed;
+  inset-block-start: 1rem;
+  inset-inline-end: 1rem;
+  z-index: 130;
   appearance: none;
-  border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
-  background: color-mix(in srgb, var(--white) 35%, transparent);
-  color: var(--ink);
-  font-weight: 700;
-  font-size: 0.95rem;
-  min-width: 3rem;
-  padding: 0.4rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  background: color-mix(in srgb, var(--terrain) 72%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 400;
+  min-inline-size: 2.9rem;
+  padding: 0.35rem 0.8rem;
   border-radius: 999px;
   cursor: pointer;
-  transition: transform 0.25s var(--ease), background 0.25s var(--ease),
-    border-color 0.25s var(--ease);
+  transition: border-color 0.25s var(--ease), color 0.25s var(--ease);
 }
 .locale-toggle:hover {
-  transform: translateY(-1px);
-  background: var(--white);
-  border-color: var(--gold-deep);
-}
-
-.scrollbar {
-  position: fixed;
-  inset-block-start: 3.25rem;
-  inset-inline: 0;
-  height: 3px;
-  z-index: 59;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
-.scrollbar__fill {
-  display: block;
-  height: 100%;
-  transform-origin: inline-start;
-  transform: scaleX(0);
-  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+  border-color: var(--gold);
+  color: var(--hot);
 }
 
 /* =========================================================================
-   BUTTONS / LINKS
+   P0 SHELL — temporary proof of the night (replaced as scenes land).
    ========================================================================= */
-.cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.85rem 1.5rem;
-  border-radius: 999px;
-  font-weight: 700;
-  color: var(--ink);
-  text-decoration: none;
-  background: linear-gradient(135deg, #c9b85f, var(--gold-deep));
-  box-shadow: 0 6px 20px -8px color-mix(in srgb, var(--gold-deep) 80%, transparent);
-  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-  cursor: pointer;
-  border: none;
-}
-.cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px -10px color-mix(in srgb, var(--gold-deep) 90%, transparent);
-}
-.cta__arrow {
-  display: inline-flex;
-  transition: transform 0.3s var(--ease);
-}
-.cta:hover .cta__arrow {
-  transform: translateX(0.3rem);
-}
-/* Mirror the arrow nudge in RTL. */
-[dir="rtl"] .cta__arrow {
-  transform: scaleX(-1);
-}
-[dir="rtl"] .cta:hover .cta__arrow {
-  transform: scaleX(-1) translateX(0.3rem);
-}
-.cta__num {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.85;
-  font-size: 0.95em;
-}
-
-/* Text links with an underline that wipes in. */
-.link {
-  color: var(--ink);
-  text-decoration: none;
-  background-image: linear-gradient(var(--gold-deep), var(--gold-deep));
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  background-size: 0% 2px;
-  transition: background-size 0.3s var(--ease);
-  padding-bottom: 2px;
-}
-.link:hover,
-.link:focus-visible {
-  background-size: 100% 2px;
-}
-
-/* =========================================================================
-   HERO
-   ========================================================================= */
-.hero {
+.night-stage {
   position: relative;
   min-height: 100svh;
   display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 2.5rem;
-  padding-block: 7rem 4rem;
-  padding-inline: clamp(1.25rem, 6vw, 5rem);
-  max-width: 68rem;
-  margin-inline: auto;
-  text-align: start;
-  overflow: hidden;
-}
-.hero__content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 1.25rem;
-  justify-items: start;
-}
-.hero__portrait {
-  position: relative;
-  z-index: 1;
-  inline-size: clamp(10rem, 24vw, 15rem);
-  aspect-ratio: 1;
-  justify-self: center;
-}
-.hero__portrait::before {
-  content: "";
-  position: absolute;
-  inset: -0.6rem;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--white) 75%, transparent),
-    transparent 70%
-  );
-  z-index: 0;
-}
-.hero__img,
-.hero__monogram {
-  position: relative;
-  z-index: 1;
-  inline-size: 100%;
-  block-size: 100%;
-  border-radius: 999px;
-  border: 4px solid var(--gold-deep);
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
-  object-fit: cover;
-  object-position: center;
-  background: var(--gold-pale);
-}
-.hero__monogram {
-  display: grid;
-  place-items: center;
-  font-family: var(--font-lateef), serif;
-  font-weight: 800;
-  font-size: clamp(3rem, 10vw, 5rem);
-  color: var(--ink);
-  background: radial-gradient(circle at 50% 35%, var(--gold-soft), var(--gold-deep));
-}
-.lang-en .hero__monogram {
-  font-family: var(--font-fraunces), serif;
-}
-@media (min-width: 768px) {
-  .hero {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 3.5rem;
-  }
-  .hero__content {
-    grid-column: 1;
-  }
-  .hero__portrait {
-    grid-column: 2;
-    justify-self: end;
-  }
-}
-.hero__sky {
-  position: absolute;
-  inset-block-start: -10%;
-  inset-inline-end: -5%;
-  width: min(40rem, 70vw);
-  aspect-ratio: 1;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--white) 70%, transparent),
-    transparent 65%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-.hero__eyebrow {
-  font-size: 0.95rem;
-  font-weight: 700;
-  /* ink (not ink-soft) — hero sits on the brightest gold; AA contrast. */
-  color: var(--ink);
-}
-.lang-en .hero__eyebrow {
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-.hero__name {
-  font-size: clamp(2.75rem, 9vw, 6rem);
-  font-weight: 800;
-  letter-spacing: 0; /* never on Arabic */
-  line-height: 1.05;
-}
-.lang-en .hero__name {
-  letter-spacing: -0.02em;
-}
-.hero__wildcard {
-  font-size: clamp(1.35rem, 3.5vw, 2.25rem);
-  font-weight: 600;
-  /* ink for readability on gold; gold expressed as an accent bar, not text. */
-  color: var(--ink);
-  font-style: italic;
-  max-width: 30ch;
-  border-inline-start: 4px solid var(--gold-deep);
-  padding-inline-start: 0.85rem;
-}
-.hero__intro {
-  max-width: 46ch;
-  color: var(--ink);
-}
-.hero__actions {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-  margin-block-start: 0.5rem;
-}
-.hero__hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--ink); /* AA on gold */
-  font-size: 0.95rem;
-}
-.hero__hint svg {
-  animation: bob 2s var(--ease) infinite;
-}
-@keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(0.35rem); }
-}
-
-/* =========================================================================
-   THE ROAD — channel layer, svg, traveler
-   ========================================================================= */
-.road {
-  position: relative;
-  max-width: 72rem;
-  margin-inline: auto;
-  padding-inline: clamp(1rem, 4vw, 2rem);
-  padding-block: 2rem 4rem;
-  overflow-x: clip; /* contain decorative glow/road excursion — no h-scroll */
-}
-.road__channel {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-.road__svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.road__path {
-  stroke-width: 3;
-  stroke-linecap: round;
-  fill: none;
-}
-.road__lead {
-  stroke-width: 4;
-  stroke-linecap: round;
-  fill: none;
-  opacity: 0;
-}
-
-.traveler {
-  position: absolute;
-  /* Physical top/left on purpose: the traveler is positioned in the SVG's
-     coordinate space (always left-origin), so it must NOT flip with dir. */
-  top: 0;
-  left: 0;
-  width: 1.5rem;
-  height: 1.5rem;
-  display: grid;
-  place-items: center;
-  will-change: transform;
-}
-.traveler__halo {
-  position: absolute;
-  inset: -0.6rem;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--gold) 75%, transparent),
-    transparent 70%
-  );
-  animation: pulse 2.4s var(--ease) infinite;
-}
-.traveler__core {
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 999px;
-  background: var(--white);
-  box-shadow: 0 0 0 3px var(--gold), 0 0 16px 2px color-mix(in srgb, var(--gold) 80%, transparent);
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.25); opacity: 0.4; }
-}
-
-/* =========================================================================
-   STOPS — the overlap-fix timeline (§4)
-   Desktop: reserved central channel; cards alternate strictly OUTSIDE it.
-   ========================================================================= */
-.stops {
-  position: relative;
-  z-index: 2;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.stop {
-  position: relative;
-  min-height: var(--stop-min);
-  display: grid;
-  grid-template-columns: 1fr var(--channel) 1fr;
-  column-gap: var(--gutter);
-  align-items: center;
-  padding-block: clamp(1.5rem, 4vh, 3rem);
-}
-/* Card sits in the inline-start (col 1) or inline-end (col 3) track.
-   Grid column numbers follow `dir`, so col 1 = inline-start automatically. */
-.stop--start .stop__card { grid-column: 1; }
-.stop--end .stop__card { grid-column: 3; }
-.stop__card,
-.stop .marker { min-width: 0; }
-/* Pin both to row 1 so grid auto-placement can't push the marker to a 2nd row
-   on the alternating (column-3 / mobile column-1) side — which would offset the
-   number from its card vertically. */
-.stop__card { grid-row: 1; }
-.stop .marker { grid-column: 2; grid-row: 1; justify-self: center; align-self: center; }
-
-/* Connector: a short line from the card's near edge toward the channel. */
-.stop__card {
-  position: relative;
-}
-.stop--start .stop__card::after,
-.stop--end .stop__card::after {
-  content: "";
-  position: absolute;
-  inset-block-start: 50%;
-  width: var(--gutter);
-  height: 2px;
-  background: linear-gradient(
-    to var(--conn-dir, right),
-    color-mix(in srgb, var(--gold-deep) 60%, transparent),
-    transparent
-  );
-}
-.stop--start .stop__card::after {
-  inset-inline-end: calc(-1 * var(--gutter));
-}
-.stop--end .stop__card::after {
-  inset-inline-start: calc(-1 * var(--gutter));
-}
-
-/* Approach: every non-gateway stop recedes as the portal nears (driven by
-   --approach set on .road by the engine). */
-.stop:not(.is-gateway) {
-  opacity: calc(1 - var(--approach, 0) * 0.5);
-  transform: scale(calc(1 - var(--approach, 0) * 0.03));
-  transition: opacity 0.2s linear, transform 0.2s linear;
-}
-
-/* =========================================================================
-   CARD
-   ========================================================================= */
-.card {
-  background: color-mix(in srgb, var(--white) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--gold-deep) 18%, transparent);
-  border-radius: 1.25rem;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--ink) 60%, transparent);
-  backdrop-filter: blur(4px);
-}
-.card__station {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-  margin-block-end: 0.35rem;
-}
-.lang-en .card__station {
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-.card__label {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  margin-block-end: 0.75rem;
-}
-.prose p + p {
-  margin-block-start: 0.75rem;
-}
-.prose__more p {
-  margin-block-start: 0.75rem;
-}
-.readmore {
-  margin-block-start: 0.75rem;
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--gold-deep);
-  font-weight: 700;
-  font: inherit;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-/* Services */
-.services {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.85rem;
-}
-.services__item {
-  display: flex;
-  gap: 0.85rem;
-  align-items: flex-start;
-}
-.services__icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
-  color: var(--gold-deep);
-  background: color-mix(in srgb, var(--gold-soft) 45%, transparent);
-}
-.services__name {
-  display: block;
-  font-weight: 700;
-}
-.services__desc {
-  display: block;
-  color: var(--ink-soft);
-  font-size: 0.95em;
-}
-
-/* Chips */
-.chips {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-.chip {
-  padding: 0.45rem 0.95rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--white) 60%, transparent);
-  border: 1px solid color-mix(in srgb, var(--gold-deep) 25%, transparent);
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-.chip--feature {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: linear-gradient(135deg, var(--gold-soft), var(--gold-pale));
-  border-color: var(--gold-deep);
-  color: var(--ink);
-}
-.chip__star {
-  color: var(--gold-deep);
-}
-
-/* Stats */
-.stats {
-  margin: 1rem 0 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
-  gap: 1rem;
-}
-.stat__n {
-  font-family: var(--font-fraunces), serif;
-  font-size: clamp(2rem, 5vw, 2.75rem);
-  font-weight: 800;
-  color: var(--gold-deep);
-  line-height: 1;
-}
-.lang-ar .stat__n {
-  font-family: var(--font-lateef), serif;
-}
-.stat__l {
-  margin: 0.35rem 0 0;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
-
-/* Quotes */
-.quotes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 1rem;
-}
-.quote {
-  margin: 0;
-  padding: 1rem 1.15rem;
-  border-inline-start: 3px solid var(--gold);
-  background: color-mix(in srgb, var(--white) 45%, transparent);
-  border-radius: 0.75rem;
-}
-.quote__text {
-  font-style: italic;
-}
-.quote__who {
-  margin-block-start: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-
-/* Contact / destination */
-.stop--contact .card {
-  background: var(--white);
-  border-color: color-mix(in srgb, var(--gold-deep) 22%, transparent);
-}
-.contact {
-  display: grid;
-  gap: 0.85rem;
-  justify-items: start;
-}
-.contact__loc {
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-.contact__closing {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--gold-deep);
-}
-
-/* =========================================================================
-   MARKER
-   ========================================================================= */
-.marker {
-  position: relative;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: var(--marker);
-  height: var(--marker);
-  transition: transform 0.3s var(--ease);
-}
-.marker:hover {
-  transform: scale(1.08);
-}
-.marker__disc {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--gold-pale);
-  border: 2px solid var(--gold-soft);
-  color: var(--ink-soft);
-  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--ink) 50%, transparent);
-  transition: background 0.4s var(--ease), color 0.4s var(--ease),
-    border-color 0.4s var(--ease), box-shadow 0.4s var(--ease);
-}
-.marker__num {
-  font-family: var(--font-fraunces), serif;
-  font-weight: 700;
-  font-size: 1rem;
-  font-variant-numeric: tabular-nums;
-}
-.lang-ar .marker__num {
-  font-family: var(--font-lateef), serif;
-  font-size: 1.1rem;
-}
-/* Lit state — stays lit once passed (progress behind you). */
-.marker.is-active .marker__disc {
-  background: linear-gradient(135deg, var(--gold), var(--gold-deep));
-  border-color: var(--gold-deep);
-  color: #fff8e1;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 30%, transparent),
-    0 8px 22px -8px color-mix(in srgb, var(--gold-deep) 90%, transparent);
-}
-
-/* Gateway marker — a distinct ✦ portal, not a number. */
-.marker--gateway .marker__disc {
-  background: radial-gradient(circle, var(--gold-pale), var(--gold-soft));
-  border: 2px solid var(--gold-deep);
-  color: var(--gold-deep);
-}
-.marker--gateway::before {
-  content: "";
-  position: absolute;
-  inset: -0.45rem;
-  border-radius: 999px;
-  border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
-  opacity: calc(0.4 + var(--approach, 0) * 0.6);
-  transform: scale(calc(1 + var(--approach, 0) * 0.15));
-  animation: ring 2.6s var(--ease) infinite;
-}
-.marker--gateway.is-active .marker__disc,
-.marker--gateway .marker__disc {
-  box-shadow: 0 0 calc(12px + var(--approach, 0) * 30px)
-    color-mix(in srgb, var(--gold) 85%, transparent);
-}
-@keyframes ring {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.12); opacity: 0.9; }
-}
-
-/* =========================================================================
-   GATEWAY STOP (Think Equality) — centred, weightier
-   ========================================================================= */
-.stop--gateway {
-  grid-template-columns: 1fr var(--channel) 1fr;
-  grid-template-rows: auto auto;
-  justify-items: center;
-  row-gap: 1.5rem;
-  min-height: var(--stop-min);
-}
-.stop--gateway .marker {
-  grid-column: 2;
-  grid-row: 1;
-}
-.gateway {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  position: relative;
-  max-width: 38rem;
-  text-align: center;
-  display: grid;
-  gap: 0.85rem;
-  justify-items: center;
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  border-radius: 1.5rem;
-  background: color-mix(in srgb, var(--white) 70%, transparent);
-  border: 1px solid color-mix(in srgb, var(--gold-deep) 30%, transparent);
-  box-shadow: 0 30px 70px -40px color-mix(in srgb, var(--gold-deep) 90%, transparent);
-}
-.gateway__bloom {
-  position: absolute;
-  inset: -25% 0; /* vertical bleed only — horizontal stays in-bounds */
-  z-index: -1;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--gold) calc(25% + var(--approach, 0) * 45%), transparent),
-    transparent 65%
-  );
-  opacity: calc(0.5 + var(--approach, 0) * 0.5);
-  pointer-events: none;
-}
-.gateway__station {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--gold-deep);
-}
-.lang-en .gateway__station {
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-.gateway__label {
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
-}
-.lang-en .gateway__label {
-  font-family: var(--font-fraunces), serif;
-}
-.gateway__tag {
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-.gateway__body {
-  max-width: 40ch;
-  color: var(--ink);
-}
-.gateway__magnet {
-  margin-block-start: 0.5rem;
-}
-.gateway__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 1.85rem;
-  border: none;
-  border-radius: 999px;
-  font: inherit;
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: var(--ink);
-  background: linear-gradient(135deg, #c9b85f, var(--gold-deep));
-  box-shadow: 0 14px 36px -14px color-mix(in srgb, var(--gold-deep) 95%, transparent);
-  cursor: pointer;
-  will-change: transform;
-  transition: box-shadow 0.3s var(--ease);
-}
-.gateway__btn:hover {
-  box-shadow: 0 20px 48px -16px color-mix(in srgb, var(--gold-deep) 100%, transparent);
-}
-.gateway__star {
-  color: var(--ink);
-}
-.gateway__arrow {
-  display: inline-flex;
-  transition: transform 0.3s var(--ease);
-}
-.gateway__btn:hover .gateway__arrow {
-  transform: translateX(0.3rem);
-}
-[dir="rtl"] .gateway__arrow {
-  transform: scaleX(-1);
-}
-[dir="rtl"] .gateway__btn:hover .gateway__arrow {
-  transform: scaleX(-1) translateX(0.3rem);
-}
-
-/* =========================================================================
-   PORTAL OVERLAY (iris / curtain)
-   ========================================================================= */
-.portal {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-}
-.portal__iris {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, #c9b85f, var(--gold-deep));
-  clip-path: circle(0px at 50% 50%);
-}
-.portal__curtain {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #c9b85f, var(--gold-deep));
-  transform: scaleX(0);
-}
-.portal__wordmark {
-  position: absolute;
-  inset: 0;
-  display: grid;
   place-content: center;
-  gap: 0.5rem;
+  justify-items: center;
+  gap: 1.2rem;
   text-align: center;
-  opacity: 0;
+  padding: clamp(1.5rem, 5vw, 4rem);
 }
-.portal__name {
-  font-family: var(--font-fraunces), serif;
-  font-size: clamp(2rem, 7vw, 4rem);
-  font-weight: 800;
-  color: var(--ink);
+.night-stage__name {
+  font-size: clamp(3rem, 11vw, 7.5rem);
+  color: var(--text);
+  text-shadow: 0 0 60px color-mix(in srgb, var(--hot) 22%, transparent);
 }
-.lang-ar .portal__name {
-  font-family: var(--font-lateef), serif;
+.night-stage__km {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  color: var(--gold);
+  opacity: 0.9;
 }
-.portal__tag {
-  color: color-mix(in srgb, var(--ink) 80%, transparent);
-  font-weight: 600;
+.night-stage__tag {
+  max-width: 42ch;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
 }
-
-/* =========================================================================
-   SITE FOOTER
-   ========================================================================= */
-.site-footer {
-  text-align: center;
-  padding: 2rem 1.5rem 3rem;
-  color: var(--ink-soft);
-  font-size: 0.85rem;
+.night-void {
+  min-height: 120svh;
 }
 
 /* =========================================================================
-   MOBILE — single rail pinned to the inline-start edge (no alternating).
-   ========================================================================= */
-@media (max-width: 767px) {
-  .road {
-    padding-inline: 1rem;
-  }
-  .stop {
-    grid-template-columns: var(--rail) 1fr;
-    column-gap: var(--gutter-m);
-    min-height: var(--stop-min-m);
-  }
-  /* All cards to the inline-end of the rail; markers on the rail. */
-  .stop--start .stop__card,
-  .stop--end .stop__card {
-    grid-column: 2;
-  }
-  .stop .marker {
-    grid-column: 1;
-    justify-self: center;
-  }
-  /* Connector always points from card toward the rail (inline-start). */
-  .stop--start .stop__card::after,
-  .stop--end .stop__card::after {
-    inset-inline-start: calc(-1 * var(--gutter-m));
-    inset-inline-end: auto;
-    width: var(--gutter-m);
-  }
-  .stop--gateway {
-    grid-template-columns: var(--rail) 1fr;
-  }
-  .stop--gateway .marker {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .gateway {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    text-align: start;
-    justify-items: start;
-  }
-}
-
-/* =========================================================================
-   REDUCED MOTION — honour it for the road, the portal, and all polish.
+   REDUCED MOTION — static world: no grain drift, no scroll hijack; the
+   line renders fully drawn (engine reads the same media query in JS).
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -1027,21 +295,7 @@ p {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  html {
-    scroll-behavior: auto;
+  .grain {
+    animation: none;
   }
-  .traveler {
-    display: none;
-  }
-  .stop:not(.is-gateway) {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
-
-/* Hide reveal elements only when motion will actually run (progressive
-   enhancement: without JS / with reduced motion they stay visible). */
-.has-motion .reveal,
-.has-motion .reveal-gateway {
-  opacity: 0;
 }
