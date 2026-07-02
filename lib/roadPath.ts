@@ -23,6 +23,26 @@ export function coverTransform(
   return { s, ox: (bw - iw * s) / 2, oy: (bh - ih * s) / 2 };
 }
 
+/** Affine-transform every coordinate of a fitted "M … C …" `d` string —
+ *  Bézier control points transform exactly, so the mapped curve is identical
+ *  to the fitted one. Returns the new d plus first/last anchors for joining. */
+export function transformD(
+  d: string,
+  map: (p: Pt) => Pt,
+): { d: string; first: Pt; last: Pt } | null {
+  const nums = (d.match(/-?\d*\.?\d+(?:e-?\d+)?/gi) ?? []).map(Number);
+  if (nums.length < 2 || nums.length % 2 !== 0) return null;
+  const pts: Pt[] = [];
+  for (let i = 0; i < nums.length; i += 2) {
+    pts.push(map({ x: nums[i], y: nums[i + 1] }));
+  }
+  let out = `M ${round(pts[0].x)} ${round(pts[0].y)}`;
+  for (let i = 1; i + 2 < pts.length; i += 3) {
+    out += ` C ${round(pts[i].x)} ${round(pts[i].y)} ${round(pts[i + 1].x)} ${round(pts[i + 1].y)} ${round(pts[i + 2].x)} ${round(pts[i + 2].y)}`;
+  }
+  return { d: out, first: pts[0], last: pts[pts.length - 1] };
+}
+
 /** Parse a fitted `d` (our own generated "M … C …" format) into anchor points.
  *  Anchors = the M point plus the end point of every curve triple. */
 export function parseFittedD(d: string): Pt[] {

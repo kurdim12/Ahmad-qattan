@@ -4,14 +4,17 @@ import { useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import { content, scenes } from "@/lib/content";
+import { content, scenes, whatsapp } from "@/lib/content";
 import { LocaleProvider, useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import { Footer } from "./Footer";
+import { GatewayStop } from "./GatewayStop";
 import { LocaleToggle } from "./LocaleToggle";
 import { ScrollProgress } from "./ScrollProgress";
 import { Fitter } from "./engine/Fitter";
 import { Preloader } from "./engine/Preloader";
 import { RoadLine } from "./engine/RoadLine";
+import { SceneShell } from "./engine/SceneShell";
 import { SkyCanvas } from "./engine/SkyCanvas";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -52,26 +55,24 @@ function Shell() {
       <main id="main">
         <div id="road-world" className="road-world">
           <RoadLine />
-          {/* P1 scaffold: geometry-only blocks; scenes replace these in P3/P4. */}
           {scenes.map((s, i) => (
             <div key={s.key}>
-              <section
-                data-scene-key={s.key}
-                className="scene scene--scaffold"
-                aria-label={s.title[locale]}
-              >
-                <div className="scene__card">
-                  <p className="eyebrow">
-                    KM {String(s.km).padStart(2, "0")} — CH.
-                    {String(i).padStart(2, "0")}
-                  </p>
-                  <h2 className="title">{s.title[locale]}</h2>
-                </div>
-              </section>
-              {i < scenes.length - 1 && <div className="void-gap" aria-hidden />}
+              <SceneShell scene={s} index={i}>
+                {s.key === "fork" && <GatewayStop />}
+                {s.key === "arrival" && (
+                  <a className="whatsapp-cta" href={whatsapp.href}>
+                    {whatsapp.label[locale]}
+                    <span aria-hidden> ↗</span>
+                  </a>
+                )}
+              </SceneShell>
+              {i < scenes.length - 1 && (
+                <div className="void-gap" aria-hidden />
+              )}
             </div>
           ))}
         </div>
+        <Footer />
       </main>
 
       <ScrollProgress />

@@ -7,11 +7,15 @@ import {
   buildLUT,
   coverTransform,
   lengthAtY,
-  parseFittedD,
-  pointsToD,
+  transformD,
   type PathLUT,
   type Pt,
 } from "@/lib/roadPath";
+
+/** .scene__media overscan (inset -4%, height 108%) — the cover mapping must
+ *  target the real rendered image box, not the section box. */
+const OVERSCAN_TOP = 0.04;
+const OVERSCAN_SCALE = 1.08;
 
 /** Where the light "is" relative to the viewport (0 top … 1 bottom). Scene
  *  card reveals and the odometer anchor to the same ratio. */
@@ -62,14 +66,15 @@ export function RoadLine() {
       svg.setAttribute("width", String(w));
       svg.setAttribute("height", String(h));
 
-      const pagePts: Pt[] = [];
+      let d = "";
+      let prevExit: Pt | null = null;
       let branchD = "";
 
       for (const scene of scenes) {
         const el = world.querySelector<HTMLElement>(
           `[data-scene-key="${scene.key}"]`,
         );
-        if (!el) continue;
+        if (!el || !scene.path) continue;
         const r = el.getBoundingClientRect();
         const top = r.top + window.scrollY - worldTop;
         const left = r.left - worldBox.left;
@@ -79,29 +84,34 @@ export function RoadLine() {
           window.matchMedia("(max-aspect-ratio: 4/5)").matches;
         const iw = usePortrait ? 941 : 1672;
         const ih = usePortrait ? 1672 : 941;
-        const { s, ox, oy } = coverTransform(iw, ih, r.width, r.height);
+        // Map into the overscanned media box the parallax layer renders in.
+        const boxH = r.height * OVERSCAN_SCALE;
+        const boxTop = top - r.height * OVERSCAN_TOP;
+        const { s, ox, oy } = coverTransform(iw, ih, r.width, boxH);
         const map = (p: Pt): Pt => ({
           x: left + ox + p.x * s,
-          y: top + oy + p.y * s,
+          y: boxTop + oy + p.y * s,
         });
 
-        if (scene.path) {
-          for (const p of parseFittedD(scene.path)) pagePts.push(map(p));
-        } else {
-          // Placeholder before fitting: a gentle lateral sway through the block.
-          const sway = (scenes.indexOf(scene) % 2 === 0 ? 1 : -1) * w * 0.08;
-          pagePts.push({ x: w * 0.5 + sway, y: top + r.height * 0.18 });
-          pagePts.push({ x: w * 0.5 - sway, y: top + r.height * 0.82 });
+        const seg = transformD(scene.path, map);
+        if (!seg) continue;
+        if (!d) {
+          d = seg.d;
+        } else if (prevExit) {
+          // Void connector: a vertical-tangent cubic through the gap.
+          const dv = Math.max(90, (seg.first.y - prevExit.y) * 0.42);
+          d += ` C ${prevExit.x} ${prevExit.y + dv} ${seg.first.x} ${seg.first.y - dv} ${seg.first.x} ${seg.first.y}`;
+          d += seg.d.replace(/^M[^C]+/, " ");
         }
+        prevExit = seg.last;
 
         if (scene.branch && branch) {
-          const pts = parseFittedD(scene.branch).map(map);
-          branchD = pointsToD(pts);
+          const b = transformD(scene.branch, map);
+          if (b) branchD = b.d;
         }
       }
 
-      if (pagePts.length < 2) return;
-      const d = pointsToD(pagePts);
+      if (!d) return;
       base.setAttribute("d", d);
       trail.setAttribute("d", d);
       trailSoft.setAttribute("d", d);
@@ -152,7 +162,7 @@ export function RoadLine() {
         const r = fork.getBoundingClientRect();
         const p = Math.min(
           1,
-          Math.max(0, (window.innerHeight * 0.9 - r.top) / (r.height * 0.9)),
+          Math.max(0, (window.innerHeight * 0.85 - r.top) / (r.height * 0.7)),
         );
         const bl = branchEl.getTotalLength();
         branchEl.style.strokeDashoffset = String(bl * (1 - p));
