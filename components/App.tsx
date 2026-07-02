@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { preload } from "react-dom";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -36,6 +37,12 @@ function useMotionShell(reduced: boolean) {
     };
   }, [reduced]);
 }
+
+// The hero frame is the LCP — hint it before hydration paints it.
+preload("/assets/scene-01-world/scene-01-world-1280.avif", {
+  as: "image",
+  fetchPriority: "high",
+});
 
 function Shell() {
   const { locale } = useLocale();

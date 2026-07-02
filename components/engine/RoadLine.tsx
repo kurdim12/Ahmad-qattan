@@ -81,7 +81,9 @@ export function RoadLine() {
 
         const usePortrait =
           !!scene.asset.portrait &&
+          !!scene.pathPortrait &&
           window.matchMedia("(max-aspect-ratio: 4/5)").matches;
+        const fitted = usePortrait ? scene.pathPortrait! : scene.path;
         const iw = usePortrait ? 941 : 1672;
         const ih = usePortrait ? 1672 : 941;
         // Map into the overscanned media box the parallax layer renders in.
@@ -93,7 +95,7 @@ export function RoadLine() {
           y: boxTop + oy + p.y * s,
         });
 
-        const seg = transformD(scene.path, map);
+        const seg = transformD(fitted, map);
         if (!seg) continue;
         if (!d) {
           d = seg.d;

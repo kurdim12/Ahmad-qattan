@@ -19,6 +19,18 @@ interface Fusion {
   tall?: boolean;
 }
 
+const LANDSCAPE_W = [720, 1280];
+const PORTRAIT_W = [540, 900];
+
+/** "/assets/source/scene-01-world.png" → "scene-01-world" */
+const assetName = (p?: string) =>
+  p ? p.split("/").pop()!.replace(/\.\w+$/, "") : undefined;
+
+const srcset = (name: string, ext: string, widths: number[]) =>
+  widths
+    .map((w) => `/assets/${name}/${name}-${w}.${ext} ${w}w`)
+    .join(", ");
+
 const FUSION: Record<string, Fusion> = {
   world: { wide: { top: 10, bottom: 86 }, tall: true },
   childhood: { box: { top: 30, bottom: 82, side: 16 } },
@@ -48,6 +60,9 @@ export function SceneShell({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const fusion = FUSION[scene.key] ?? { wide: { top: 12, bottom: 85 } };
+  const baseName = assetName(scene.asset.base)!;
+  const portraitName = assetName(scene.asset.portrait);
+  const fgName = assetName(scene.asset.fg);
 
   // Parallax (bg 0.95x, fg 1.1x + mouse) and card reveal at light arrival.
   useEffect(() => {
@@ -165,18 +180,46 @@ export function SceneShell({
       aria-label={scene.title[locale]}
     >
       <div className={`scene__frame ${fuseClass}`} style={maskStyle}>
-        {/* Base frame. Portrait variant swaps in via <source> below 4/5. */}
+        {/* Base frame from the derivative pipeline: AVIF → WebP → JPEG,
+            portrait variant swapping in below 4/5 aspect. */}
         <picture>
-          {scene.asset.portrait && (
-            <source
-              media="(max-aspect-ratio: 4/5)"
-              srcSet={scene.asset.portrait}
-            />
+          {portraitName && (
+            <>
+              <source
+                media="(max-aspect-ratio: 4/5)"
+                type="image/avif"
+                srcSet={srcset(portraitName, "avif", PORTRAIT_W)}
+                sizes="100vw"
+              />
+              <source
+                media="(max-aspect-ratio: 4/5)"
+                type="image/webp"
+                srcSet={srcset(portraitName, "webp", PORTRAIT_W)}
+                sizes="100vw"
+              />
+              <source
+                media="(max-aspect-ratio: 4/5)"
+                srcSet={srcset(portraitName, "jpg", PORTRAIT_W)}
+                sizes="100vw"
+              />
+            </>
           )}
+          <source
+            type="image/avif"
+            srcSet={srcset(baseName, "avif", LANDSCAPE_W)}
+            sizes="100vw"
+          />
+          <source
+            type="image/webp"
+            srcSet={srcset(baseName, "webp", LANDSCAPE_W)}
+            sizes="100vw"
+          />
           <img
             ref={bgRef}
             className="scene__media"
-            src={scene.asset.base}
+            src={`/assets/${baseName}/${baseName}-1280.jpg`}
+            srcSet={srcset(baseName, "jpg", LANDSCAPE_W)}
+            sizes="100vw"
             alt=""
             draggable={false}
             loading={index === 0 ? "eager" : "lazy"}
@@ -184,16 +227,23 @@ export function SceneShell({
             decoding="async"
           />
         </picture>
-        {scene.asset.fg && (
+        {fgName && (
           <div ref={fgRef} className="scene__fg-wrap" aria-hidden>
-            <img
-              className={`scene__media scene__media--fg${kiteBob ? " scene__media--bob" : ""}`}
-              src={scene.asset.fg}
-              alt=""
-              draggable={false}
-              loading="lazy"
-              decoding="async"
-            />
+            <picture>
+              <source
+                type="image/webp"
+                srcSet={srcset(fgName, "webp", LANDSCAPE_W)}
+                sizes="60vw"
+              />
+              <img
+                className={`scene__media scene__media--fg${kiteBob ? " scene__media--bob" : ""}`}
+                src={`/assets/${fgName}/${fgName}-1280.png`}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
           </div>
         )}
       </div>

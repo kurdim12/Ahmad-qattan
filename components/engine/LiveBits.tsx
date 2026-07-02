@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Scene } from "@/lib/content";
-import { SRC } from "@/lib/content";
 import { coverTransform } from "@/lib/roadPath";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+
+const PAPERS = "/assets/sprite-papers/sprite-papers-720.webp";
 
 /** Image-space anchors (1672×941) for the living elements of each scene:
  *  window/lamp flickers, teapot steam, breathing spotlight, sun pulse. */
@@ -39,7 +40,19 @@ export function LiveBits({ scene }: { scene: Scene }) {
     null,
   );
 
-  const anchors = ANCHORS[scene.key];
+  const [portraitMode, setPortraitMode] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-aspect-ratio: 4/5)");
+    const update = () => setPortraitMode(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Anchor coords live in the landscape frame — a portrait variant is a
+  // different composition, so anchored bits stand down there.
+  const anchors =
+    scene.asset.portrait && portraitMode ? undefined : ANCHORS[scene.key];
   const papers = scene.live?.includes("papers");
   const cityLights = scene.live?.includes("cityLights");
 
@@ -91,11 +104,11 @@ export function LiveBits({ scene }: { scene: Scene }) {
         <>
           <span
             className="live-papers live-papers--a"
-            style={{ backgroundImage: `url(${SRC}/sprite-papers.png)` }}
+            style={{ backgroundImage: `url(${PAPERS})` }}
           />
           <span
             className="live-papers live-papers--b"
-            style={{ backgroundImage: `url(${SRC}/sprite-papers.png)` }}
+            style={{ backgroundImage: `url(${PAPERS})` }}
           />
         </>
       )}
