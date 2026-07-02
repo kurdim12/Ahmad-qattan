@@ -104,7 +104,7 @@ export interface PathLUT {
   samples: { len: number; x: number; y: number; yMono: number }[];
 }
 
-export function buildLUT(path: SVGPathElement, step = 12): PathLUT {
+export function buildLUT(path: SVGPathElement, step = 22): PathLUT {
   const total = path.getTotalLength();
   const samples: PathLUT["samples"] = [];
   let yMono = -Infinity;

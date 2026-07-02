@@ -1,11 +1,12 @@
-// Optional headless smoke test for the acceptance criteria (§4 no-overlap,
-// no h-overflow, road draws, locale/RTL toggle, portal plays).
+// Headless smoke test for the Night Road.
 //
 //   1) npm run build && npm run preview     # serves ./out on :3000
-//   2) npm i -D playwright && npx playwright install chromium
+//   2) npm i -D playwright  (chromium via PW_EXECUTABLE or playwright install)
 //   3) BASE_URL=http://localhost:3000 node test/smoke.mjs
 //
-// Env overrides: BASE_URL, PW_EXECUTABLE (custom Chromium path).
+// Checks: night theme, all scenes present, THE line drawn + head riding,
+// odometer calibration (٤٧ at the end), locale/RTL mirror, dawn inversion,
+// portal demo, no horizontal overflow, reduced-motion static world.
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 const OUT = process.env.SHOTS || "/tmp/shots";
@@ -15,58 +16,18 @@ try {
   ({ chromium } = await import("playwright"));
 } catch {
   console.log("playwright not installed — skipping smoke test.");
-  console.log("  npm i -D playwright && npx playwright install chromium");
   process.exit(0);
 }
 
 import { mkdirSync } from "fs";
 mkdirSync(OUT, { recursive: true });
 
-const intersects = (a, b) => {
-  const p = 0.5;
-  return !(a.x + a.w - p <= b.x || b.x + b.w - p <= a.x || a.y + a.h - p <= b.y || b.y + b.h - p <= a.y);
-};
-const rects = (page, sel) =>
-  page.$$eval(sel, (els) =>
-    els.map((el) => {
-      const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, w: r.width, h: r.height };
-    }),
-  );
-
-async function overlapReport(page, label) {
-  const markers = await rects(page, ".marker");
-  const cards = await rects(page, ".stop__card, .gateway");
-  let mc = 0;
-  for (const m of markers) for (const c of cards) if (intersects(m, c)) mc++;
-  let mm = 0;
-  for (let i = 0; i < markers.length; i++)
-    for (let j = i + 1; j < markers.length; j++) if (intersects(markers[i], markers[j])) mm++;
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  console.log(
-    `[${label}] markers=${markers.length} cards=${cards.length} | marker×card=${mc} | marker×marker=${mm} | h-overflow=${overflow}px`,
-  );
-  return { mc, mm, overflow, markers: markers.length };
-}
-
-async function scrollThrough(page) {
-  await page.evaluate(async () => {
-    const h = document.documentElement.scrollHeight;
-    for (let y = 0; y <= h; y += Math.round(window.innerHeight * 0.6)) {
-      window.scrollTo(0, y);
-      await new Promise((r) => setTimeout(r, 120));
-    }
-    window.scrollTo(0, 0);
-    await new Promise((r) => setTimeout(r, 200));
-  });
-}
-
 const errors = [];
-const launchOpts = process.env.PW_EXECUTABLE ? { executablePath: process.env.PW_EXECUTABLE } : {};
-const browser = await chromium.launch(launchOpts);
 let fail = false;
+const launchOpts = process.env.PW_EXECUTABLE
+  ? { executablePath: process.env.PW_EXECUTABLE }
+  : {};
+const browser = await chromium.launch(launchOpts);
 
 async function newPage(opts) {
   const ctx = await browser.newContext(opts);
@@ -76,64 +37,114 @@ async function newPage(opts) {
   return { ctx, page };
 }
 
-// 1) Desktop layout/overlap (reduced motion = stable final layout)
-{
-  const { ctx, page } = await newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "reduce", label: "desktop" });
-  await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.waitForTimeout(500);
-  await scrollThrough(page);
-  const r = await overlapReport(page, "desktop");
-  if (r.mc || r.mm || r.overflow > 1 || r.markers < 8) fail = true;
-  await page.screenshot({ path: `${OUT}/desktop-mid.png` });
-  await ctx.close();
-}
+const check = (label, ok) => {
+  console.log(`${ok ? "✓" : "✗"} ${label}`);
+  if (!ok) fail = true;
+};
 
-// 2) Mobile single-rail layout/overlap
+// 1) Desktop journey
 {
-  const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce", label: "mobile" });
+  const { ctx, page } = await newPage({
+    viewport: { width: 1440, height: 900 },
+    label: "desktop",
+  });
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.waitForTimeout(500);
-  await scrollThrough(page);
-  const r = await overlapReport(page, "mobile");
-  if (r.mc || r.mm || r.overflow > 1) fail = true;
-  await ctx.close();
-}
+  await page.waitForTimeout(3400); // preloader
 
-// 3) Motion: road draws, traveler, locale toggle, portal plays + reverses
-{
-  const { ctx, page } = await newPage({ viewport: { width: 1280, height: 900 }, label: "motion" });
-  await page.goto(BASE_URL, { waitUntil: "networkidle" });
+  check(
+    "night page background",
+    (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) ===
+      "rgb(11, 9, 6)",
+  );
+  check("nine scenes", (await page.$$("[data-scene-key]")).length === 9);
+  const d = await page.$eval(".road-line__base", (p) => p.getAttribute("d") || "");
+  check(`line drawn (${d.length} chars)`, d.length > 400);
+  check("head present", (await page.$(".road-line__head")) !== null);
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  check("no horizontal overflow", overflow <= 1);
+
+  // Dawn inversion at the fork
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-scene-key="fork"]');
+    const r = el.getBoundingClientRect();
+    window.scrollTo({ top: r.top + scrollY + r.height / 2 - innerHeight * 0.5, behavior: "instant" });
+  });
   await page.waitForTimeout(900);
-  const d = await page.$eval(".road__path", (p) => p.getAttribute("d") || "");
-  const traveler = (await page.$(".traveler")) != null;
-  console.log(`[motion] path=${d.length} chars | traveler=${traveler}`);
-  if (d.length < 20 || !traveler) fail = true;
+  check(
+    "dawn inversion at the arch",
+    await page.evaluate(() => document.documentElement.classList.contains("is-dawn")),
+  );
+  await page.screenshot({ path: `${OUT}/fork-dawn.png` });
 
+  // Portal demo (placeholder URL → no navigation)
+  const btn = await page.$(".gateway__btn");
+  if (btn) {
+    await btn.click();
+    await page.waitForTimeout(500);
+    check(
+      "portal plays",
+      await page.$eval(".portal", (el) => {
+        const s = getComputedStyle(el);
+        return s.visibility !== "hidden" && parseFloat(s.opacity) > 0.5;
+      }),
+    );
+    await page.waitForTimeout(2400);
+  } else check("portal plays", false);
+
+  // Odometer ends at ٤٧
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+  await page.waitForTimeout(900);
+  const km = await page.$eval(".odometer__value", (el) => el.textContent);
+  check(`odometer reads ٤٧ at Amman (got ${km})`, km === "٤٧");
+  check(
+    "night restored after dawn",
+    await page.evaluate(() => !document.documentElement.classList.contains("is-dawn")),
+  );
+
+  // Locale mirror
   await page.click(".locale-toggle");
   await page.waitForTimeout(600);
   const dir = await page.evaluate(() => document.documentElement.dir);
   const lang = await page.evaluate(() => document.documentElement.lang);
-  if (dir !== "ltr" || lang !== "en" || !page.url().includes("lang=en")) fail = true;
-  console.log(`[motion] toggle → dir=${dir} lang=${lang}`);
-  await page.click(".locale-toggle");
-  await page.waitForTimeout(500);
+  check(`locale mirror (dir=${dir} lang=${lang})`, dir === "ltr" && lang === "en");
+  await ctx.close();
+}
 
-  await page.evaluate(() => document.querySelector("[data-gateway-stop]")?.scrollIntoView({ block: "center" }));
-  await page.waitForTimeout(800);
-  await (await page.$(".gateway__btn")).click();
-  await page.waitForTimeout(450);
-  const visible = await page.$eval(".portal", (el) => {
-    const s = getComputedStyle(el);
-    return s.visibility !== "hidden" && parseFloat(s.opacity) > 0.5;
+// 2) Mobile portrait
+{
+  const { ctx, page } = await newPage({
+    viewport: { width: 390, height: 844 },
+    label: "mobile",
   });
-  if (!visible) fail = true;
-  await page.screenshot({ path: `${OUT}/portal.png` });
-  await page.waitForTimeout(2200);
-  const hidden = await page.$eval(".portal", (el) => {
-    const s = getComputedStyle(el);
-    return s.visibility === "hidden" || parseFloat(s.opacity) < 0.05;
+  await page.goto(BASE_URL, { waitUntil: "networkidle" });
+  await page.waitForTimeout(3400);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  check("mobile: no horizontal overflow", overflow <= 1);
+  const src = await page.$eval(".scene--world .scene__media", (i) => i.currentSrc);
+  check("mobile: portrait variant served", /portrait/.test(src));
+  await ctx.close();
+}
+
+// 3) Reduced motion: static world, line fully drawn
+{
+  const { ctx, page } = await newPage({
+    viewport: { width: 1280, height: 800 },
+    reducedMotion: "reduce",
+    label: "reduced",
   });
-  console.log(`[motion] portal visible=${visible} reversed=${hidden}`);
+  await page.goto(BASE_URL, { waitUntil: "networkidle" });
+  await page.waitForTimeout(1200);
+  check(
+    "reduced: no preloader lock",
+    await page.evaluate(() => !document.documentElement.classList.contains("is-loading")),
+  );
+  const dash = await page.$eval(".road-line__trail", (p) => p.style.strokeDasharray);
+  check(`reduced: line fully drawn (dasharray="${dash}")`, dash === "none" || dash === "");
   await ctx.close();
 }
 

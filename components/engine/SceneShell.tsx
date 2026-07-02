@@ -47,10 +47,13 @@ export function SceneShell({
   scene,
   index,
   children,
+  overlay,
 }: {
   scene: Scene;
   index: number;
   children?: ReactNode;
+  /** Rendered outside the animated card (absolute against the section). */
+  overlay?: ReactNode;
 }) {
   const { locale } = useLocale();
   const reduced = useReducedMotion();
@@ -69,7 +72,11 @@ export function SceneShell({
     if (reduced) return;
     const section = ref.current;
     if (!section) return;
-    const ctx = gsap.context(() => {
+    let ctx: gsap.Context | undefined;
+    // Defer trigger creation out of the hydration flush (9 scenes at once
+    // would otherwise form one long task).
+    const initId = window.setTimeout(() => {
+    ctx = gsap.context(() => {
       if (bgRef.current) {
         gsap.fromTo(
           bgRef.current,
@@ -120,6 +127,7 @@ export function SceneShell({
         );
       }
     }, section);
+    }, 0);
 
     // fg mouse drift ±6px — transform only, lerped.
     let raf = 0;
@@ -145,7 +153,8 @@ export function SceneShell({
     };
     if (inner) window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
-      ctx.revert();
+      clearTimeout(initId);
+      ctx?.revert();
       window.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(raf);
     };
@@ -270,6 +279,7 @@ export function SceneShell({
         ))}
         {children}
       </div>
+      {overlay}
     </section>
   );
 }

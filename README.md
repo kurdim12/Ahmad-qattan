@@ -1,195 +1,68 @@
-# THE ROAD — Ahmad Qattan portfolio
+# أحمد قطّان — The Night Road / طريق الليل
 
-A bilingual (Arabic-first, RTL + English) personal portfolio built on one idea:
-**the page is a road and the visitor travels down it.** A winding path draws
-itself on scroll, a glowing dot rides the path, milestones light up as you pass,
-the background travels gold → white, and **Think Equality** is a fork in the
-road — a portal that plays a gold-iris transition, then opens the external site.
+A cinematic one-page scroll experience: one glowing golden road through a
+Jordanian desert night tells Ahmad Qattan's story. Arabic-first, RTL, with a
+full English mirror. Built on Next.js 15 (static export), GSAP + Lenis.
 
-Brand: Lateef (Arabic) / Fraunces + Inter (English), gold `#B7A441` + white.
+## How the world is built
 
----
+- **The page IS the night.** `--night #0B0906` is both the page background and
+  the frames' corner color. Every AI-painted frame is a full-bleed layer whose
+  edges dissolve into the page via CSS masks (`.fuse`, `.fuse-wide`,
+  `.fuse-box` in `app/globals.css`). No `<img>` rectangle ever survives.
+- **One line, one light.** `components/engine/RoadLine.tsx` draws a single
+  SVG path across the whole journey: per-scene road segments fitted over the
+  painted asphalt (stored as `path` / `pathPortrait` in `lib/content.ts`,
+  image coordinates), affine-mapped through each scene's cover transform and
+  joined by generated void curves. A hot head + trail ride it, scrubbed by
+  scroll; `mix-blend-mode: screen` + soft strokes make ±10px of misfit read
+  as light on the painted road.
+- **The odometer** (`components/ScrollProgress.tsx`) interpolates km
+  piecewise between scene centres, so it reads each stop's labelled km (كم ٧،
+  كم ٣٥ … كم ٤٧) exactly when the light reaches it.
+- **Dawn inversion.** From the arch's centring through the dawn scene,
+  `html.is-dawn` swaps the page vars to `--dawn`/`--ink` over 1s and back
+  (`components/GatewayStop.tsx`).
+- **The unifiers.** One animated film-grain layer (SVG feTurbulence, stepped
+  jumps, opacity .055) and one vignette sit above everything.
+- **Live bits** (`components/engine/LiveBits.tsx`): window/lamp flickers,
+  teapot steam, breathing spotlight, drifting papers, sun pulse, canvas city
+  shimmer — anchored in image coordinates via the same cover transform.
+- **Sky** (`components/engine/SkyCanvas.tsx`): seeded stars + gold dust,
+  45fps cap, pauses when hidden, eases out during dawn.
 
-## Tech stack
+## Editing content
 
-- **Next.js 15 (App Router) + TypeScript + Tailwind CSS** — statically exported
-  (`output: "export"`) to `./out`, so it deploys anywhere with zero server runtime.
-- **GSAP + ScrollTrigger** — the road draw, traveler, marker lighting, gateway
-  approach, and the portal sequence. The road draw uses `stroke-dashoffset`
-  (no premium DrawSVG plugin required).
-- **Lenis** — smooth scroll, synced to GSAP’s ticker, on its own rAF.
-- **`@gsap/react` (`useGSAP`)** — scoped GSAP with automatic cleanup.
-- **`next/font`** — self-hosted Lateef / Fraunces / Inter with `font-display: swap`.
+Everything lives in `lib/content.ts` (AR + EN). Placeholders are marked
+[محتوى مبدئي] / [Placeholder]. The Think Equality gateway URL stays `"#"`
+and the WhatsApp number stays `9627XXXXXXXX` until the real ones arrive.
+Set `SITE_URL` in `app/layout.tsx` before deploying.
 
-> Animation deps are limited to **GSAP + Lenis** (per the perf budget). All
-> mount/unmount and cinematic transitions are done with GSAP timelines + React
-> state + CSS, so there is no third animation library to ship.
+## Refitting the line (?fit=1)
 
-Only `transform`, `opacity`, `clip-path` (and the sanctioned SVG
-`stroke-dashoffset` for the road draw) are animated.
+Open any page with `?fit=1`: pick a scene, click points along the painted
+road (Z undo, C clear, B branch mode), copy the printed `d` into that
+scene's `path` in `lib/content.ts`. The overlay uses the exact cover mapping
+the site uses, in landscape image coordinates (1672×941).
 
----
+## Assets
 
-## Run it
+- Sources: `public/assets/source/` (canonical scene names; `rejected/` holds
+  alternates; the sprites' alpha was recovered from painted checkerboards).
+- Derivatives: `node scripts/assets.mjs` (sharp) → AVIF/WebP/JPEG at 720/1280
+  (+540/900 portraits) into `public/assets/<name>/`.
+- `public/ahmad-qattan.jpg` is the real photo — never modified; its archive
+  look (`components/Portrait.tsx`) is CSS-only.
 
-```bash
-npm install
-npm run dev        # http://localhost:3000
-
-npm run build      # static export → ./out
-npm run preview    # serve ./out at http://localhost:3000
-```
-
-Node ≥ 18.18.
-
-### Deploy
-
-This is a fully static export (`output: "export"` → `./out`), so it deploys as
-plain static assets — no server runtime.
-
-- **Cloudflare (Workers static assets):** `wrangler.jsonc` is committed and points
-  `assets.directory` at `./out`. Build with `npm run build`, deploy with
-  `npx wrangler deploy`. The committed config also stops wrangler's framework
-  auto-config from invoking OpenNext (which targets SSR builds and fails on a
-  static export). Change the Worker `name` in `wrangler.jsonc` if needed.
-- **Cloudflare Pages:** build command `npm run build`, output directory `out`.
-- **Vercel / any static host:** import the repo (output directory `out`).
-
----
-
-## Project structure
-
-```
-app/
-  layout.tsx        Root layout: next/font, SEO metadata, hreflang, Person JSON-LD
-  page.tsx          Renders <App/>
-  globals.css       Design tokens + the overlap-fix timeline + all interaction CSS
-  icon.svg          Favicon
-components/
-  App.tsx           Client root: LocaleProvider + chrome + locale crossfade
-  Hero.tsx          Hero / page-load sequence + restrained sky parallax
-  RoadJourney.tsx   THE ENGINE — builds the path, draws on scroll, rides the
-                    traveler, lights markers, drives the gateway approach, Lenis
-  Stop.tsx          Renders a milestone card by type (+ "expand if long")
-  GatewayStop.tsx   Think Equality gateway + the portal sequence (iris / curtain)
-  Marker.tsx        Number-in-disc marker (and the ✦ gateway marker)
-  Traveler.tsx      The glowing dot
-  LocaleToggle.tsx  AR/EN corner toggle
-  ScrollProgress.tsx Slim progress bar under the top bar
-  icons.tsx         Service / arrow / portal glyphs
-lib/
-  content.ts        ★ SINGLE SOURCE OF TRUTH for all copy (AR + EN)
-  config.ts         Portal variant + timing knobs
-  locale.tsx        Locale state (URL ?lang=, no localStorage) + dir/lang/fonts
-  numerals.ts       Eastern-Arabic numerals + stop numbering
-  useReducedMotion.ts
-test/
-  smoke.mjs         Optional Playwright check (no-overlap, RTL, portal). See below.
-```
-
----
-
-## Where real content goes
-
-**Everything is in [`lib/content.ts`](lib/content.ts)** — one typed config the
-client edits in one place. All copy is placeholder and marked `[محتوى مبدئي]`
-(AR) / `[Placeholder]` (EN). Replace the strings per locale; structure stays.
-
-| What | Where in `content.ts` |
-| --- | --- |
-| Hero name / wildcard line / intro | `ar.hero`, `en.hero` |
-| **Hero portrait (photo)** | overwrite `public/ahmad-qattan.jpg` (same filename, square works best). Path lives in `hero.portrait.src`; a monogram shows if the file is missing. |
-| Each milestone (About → Contact) | `ar.stops[]`, `en.stops[]` |
-| **Think Equality URL** | the `gateway` stop → `url` (currently **`"#"`**) |
-| **WhatsApp number / link** | the `contact` stop → `whatsapp.number` / `whatsapp.href` |
-| **Location** | the `contact` stop → `location` |
-| Stats / quotes / values / ventures | the typed `stats` / `quotes` / `chips` stops |
-
-> Milestone numbers are generated automatically (Eastern-Arabic in AR, Western in
-> EN); the gateway is a ✦, never a number. Card sides alternate automatically.
-
-### The Think Equality URL
-
-In `content.ts`, find the `think-equality` stop and set `url` to the real
-address. While it stays `"#"`, the portal plays as a **demo** (it animates and
-reverses but does not navigate). Once a real URL is set, the sequence plays and
-then opens it in a new tab (`rel="noopener noreferrer"`).
-
----
-
-## Tuning
-
-### Gold intensity (the gold → white journey)
-
-In [`app/globals.css`](app/globals.css), the `:root` block defines the page
-gradient stops:
-
-```css
---grad-0: #b7a441;  /* top — the starting gold (raise/lower intensity here) */
---grad-1: #c4b561;
---grad-2: #d6cb8c;
-/* … → */
---grad-6: #ffffff;  /* bottom — clarity / white */
-```
-
-Make the start more intense by darkening `--grad-0/1/2`; soften it by lightening
-them. The road stroke gradient and CTA golds use the brand tokens above them.
-
-### Portal effect — iris vs curtain
-
-In [`lib/config.ts`](lib/config.ts):
-
-```ts
-export const PORTAL_VARIANT: "iris" | "curtain" = "iris";
-```
-
-- **`iris`** (default): a gold `clip-path: circle()` expands from the button to
-  fill the viewport, the wordmark fades in, the link opens, then the iris reverses.
-- **`curtain`**: a full-width gold panel sweeps across, reveals a brief splash,
-  opens the link, then sweeps away.
-
-Timings are in the same file (`PORTAL`).
-
-> **Note on “animate then open”:** the sequence opens the external site near the
-> end of the animation. Browsers allow this within ~1s of a click; the timings
-> here stay inside that window. If you ever need a longer pre-navigation
-> sequence, open the tab on click and set its location afterward.
-
----
-
-## Accessibility & reduced motion
-
-- `prefers-reduced-motion` is fully honored: no Lenis, no scrubbed draw — the
-  finished road shows with every marker lit, cards are visible, and the portal
-  **just opens the link**. All CSS animations/transitions are neutralized.
-- WCAG AA: body text is ink (not gold/white). Hero text on the brightest gold is
-  ink (~5.9:1). Visible `:focus-visible`, a skip link, full keyboard nav,
-  semantic landmarks (`header` / `main` / `footer`, headings, `section`).
-- External links use `target="_blank" rel="noopener noreferrer"`.
-
-## SEO
-
-- Set the production origin in [`app/layout.tsx`](app/layout.tsx) (`SITE_URL`) —
-  it feeds canonical, `hreflang` (`ar` / `en` / `x-default`), Open Graph and
-  Twitter cards.
-- Replace [`public/og.svg`](public/og.svg) with a 1200×630 share image (a PNG is
-  recommended for the widest crawler support).
-- Add the client’s social URLs to the `Person` JSON-LD `sameAs` array.
-
-## Performance
-
-Static export, `next/font` (swap, no layout shift), no raster images, GSAP +
-Lenis as the only animation deps, compositor-friendly animations. Run Lighthouse
-against the built output (`npm run preview`) — target ≥ 90 perf + a11y.
-
-## Optional smoke test
-
-A headless check of the acceptance criteria (no marker/number overlap at desktop
-+ mobile, no horizontal overflow, the road draws, RTL/EN toggle, the portal
-plays and reverses):
+## Commands
 
 ```bash
-npm run build && npm run preview          # terminal 1
-npm i -D playwright && npx playwright install chromium
-BASE_URL=http://localhost:3000 node test/smoke.mjs   # terminal 2
+npm run dev        # develop
+npm run build      # static export → ./out (Cloudflare-ready)
+npm run preview    # serve ./out on :3000
+node scripts/assets.mjs                 # regenerate image derivatives
+BASE_URL=http://localhost:3000 node test/smoke.mjs   # headless smoke suite
 ```
+
+Reduced motion: static frames, fully drawn line, no smooth-scroll hijack.
+No JS: frames + text stack render and read fine.

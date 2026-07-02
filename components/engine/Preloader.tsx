@@ -18,8 +18,8 @@ export function Preloader() {
   const reduced = useReducedMotion();
   const [gone, setGone] = useState(false);
   const [fading, setFading] = useState(false);
-  const [n, setN] = useState(0);
   const [word, setWord] = useState(0); // index into words; words.length = the name
+  const kmRef = useRef<HTMLParagraphElement>(null);
   const doneRef = useRef(false);
 
   useEffect(() => {
@@ -29,12 +29,26 @@ export function Preloader() {
     }
     document.documentElement.classList.add("is-loading");
     let raf = 0;
+    let lastN = -1;
+    let lastWord = -1;
     const t0 = performance.now();
     const tick = (t: number) => {
       const p = Math.min(1, (t - t0) / DURATION);
       const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(eased * 100));
-      setWord(Math.min(preloader.words.length, Math.floor(p * (preloader.words.length + 1))));
+      // Digits update via direct DOM writes — no re-render per frame.
+      const n = Math.round(eased * 100);
+      if (n !== lastN && kmRef.current) {
+        lastN = n;
+        kmRef.current.textContent = formatKm(n, locale);
+      }
+      const w = Math.min(
+        preloader.words.length,
+        Math.floor(p * (preloader.words.length + 1)),
+      );
+      if (w !== lastWord) {
+        lastWord = w;
+        setWord(w);
+      }
       if (p < 1) {
         raf = requestAnimationFrame(tick);
       } else if (!doneRef.current) {
@@ -45,7 +59,7 @@ export function Preloader() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [reduced]);
+  }, [reduced, locale]);
 
   useEffect(() => {
     if (gone) document.documentElement.classList.remove("is-loading");
@@ -74,8 +88,8 @@ export function Preloader() {
       >
         {label}
       </p>
-      <p className="km-display preloader__km" dir="rtl">
-        {formatKm(n, locale)}
+      <p ref={kmRef} className="km-display preloader__km" dir="rtl">
+        {formatKm(0, locale)}
       </p>
     </div>
   );

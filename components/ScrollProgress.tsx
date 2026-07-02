@@ -80,15 +80,14 @@ export function ScrollProgress() {
 
   const c = content[locale];
   return (
-    <div
-      className="odometer"
-      role="status"
-      aria-label={c.ui.odometerAria}
-      dir="rtl"
-    >
-      <span className="odometer__word">{c.ui.kmWord}</span>{" "}
-      <span className="km-display odometer__value">
-        {formatNumber(km, locale)}
+    <div className="odometer" role="status" aria-label={c.ui.odometerAria}>
+      {/* Inner span carries the reading order; the wrapper keeps the page
+          direction so inset-inline-start doesn't flip with the numerals. */}
+      <span className="odometer__inner" dir={locale === "ar" ? "rtl" : "ltr"}>
+        <span className="odometer__word">{c.ui.kmWord}</span>{" "}
+        <span className="km-display odometer__value">
+          {formatNumber(km, locale)}
+        </span>
       </span>
     </div>
   );

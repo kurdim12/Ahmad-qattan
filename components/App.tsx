@@ -11,6 +11,7 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 import { Footer } from "./Footer";
 import { GatewayStop } from "./GatewayStop";
 import { LocaleToggle } from "./LocaleToggle";
+import { Portrait } from "./Portrait";
 import { ScrollProgress } from "./ScrollProgress";
 import { Fitter } from "./engine/Fitter";
 import { Preloader } from "./engine/Preloader";
@@ -64,8 +65,13 @@ function Shell() {
           <RoadLine />
           {scenes.map((s, i) => (
             <div key={s.key}>
-              <SceneShell scene={s} index={i}>
+              <SceneShell
+                scene={s}
+                index={i}
+                overlay={s.key === "world" ? <Portrait variant="hero" /> : undefined}
+              >
                 {s.key === "fork" && <GatewayStop />}
+                {s.key === "today" && <Portrait variant="today" />}
                 {s.key === "arrival" && (
                   <a className="whatsapp-cta" href={whatsapp.href}>
                     {whatsapp.label[locale]}

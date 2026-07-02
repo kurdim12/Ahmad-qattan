@@ -716,6 +716,58 @@ html.is-dawn .gateway__btn {
 }
 
 /* =========================================================================
+   PORTRAIT — the real photo, archive-treated with CSS only.
+   ========================================================================= */
+.portrait {
+  position: relative;
+  margin: 0;
+  inline-size: clamp(5.5rem, 11vw, 8.5rem);
+  aspect-ratio: 3 / 4;
+  -webkit-mask-image: radial-gradient(115% 105% at 50% 42%, #000 52%, transparent 92%);
+  mask-image: radial-gradient(115% 105% at 50% 42%, #000 52%, transparent 92%);
+  opacity: 0.9;
+}
+.portrait__img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  filter: grayscale(1) sepia(0.5) contrast(1.06) brightness(0.88);
+}
+.portrait__tone {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--gold) 55%, transparent);
+  mix-blend-mode: color;
+}
+.portrait__scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(4, 3, 1, 0.28) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: overlay;
+}
+.portrait--hero {
+  position: absolute;
+  inset-block-end: 6svh;
+  inset-inline-end: clamp(1rem, 5vw, 4rem);
+  z-index: 10;
+}
+.portrait--today {
+  justify-self: start;
+  margin-block-start: 0.8rem;
+}
+@media (max-width: 720px) {
+  .portrait--hero {
+    display: none; /* keep the small hero uncluttered */
+  }
+}
+
+/* =========================================================================
    FOOTER — Amman clock + ventures marquee.
    ========================================================================= */
 .site-footer {
@@ -781,12 +833,14 @@ html.is-dawn .gateway__btn {
   inset-block-end: 1rem;
   inset-inline-start: 1.25rem;
   z-index: 130;
-  display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
   color: var(--gold);
   text-shadow: 0 0 18px color-mix(in srgb, var(--hot) 35%, transparent);
   pointer-events: none;
+}
+.odometer__inner {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
 }
 .odometer__word {
   font-size: 0.95rem;

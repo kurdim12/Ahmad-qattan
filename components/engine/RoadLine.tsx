@@ -185,19 +185,40 @@ export function RoadLine() {
       trailSoft.style.strokeDashoffset = off;
     };
 
-    build();
-    tick();
+    // Rebuilds are expensive (arc-length LUT over the whole journey) —
+    // coalesce and skip when the world geometry hasn't actually changed.
+    let lastSize = "";
+    let buildRaf = 0;
+    const requestBuild = () => {
+      cancelAnimationFrame(buildRaf);
+      buildRaf = requestAnimationFrame(() => {
+        const size = `${world.clientWidth}x${world.scrollHeight}`;
+        if (size === lastSize) return;
+        lastSize = size;
+        build();
+      });
+    };
 
-    const ro = new ResizeObserver(() => build());
+    // First build leaves the hydration task — the arc-length LUT is the
+    // single most expensive startup computation.
+    const initId = window.setTimeout(() => {
+      build();
+      lastSize = `${world.clientWidth}x${world.scrollHeight}`;
+      tick();
+    }, 0);
+
+    const ro = new ResizeObserver(requestBuild);
     ro.observe(world);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", build);
+    window.addEventListener("resize", requestBuild);
     return () => {
       alive = false;
+      clearTimeout(initId);
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(buildRaf);
       ro.disconnect();
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", build);
+      window.removeEventListener("resize", requestBuild);
     };
   }, [reduced]);
 
