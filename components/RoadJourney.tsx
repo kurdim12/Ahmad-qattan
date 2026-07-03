@@ -11,6 +11,7 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 import { formatStopNumber } from "@/lib/numerals";
 import { Stop } from "./Stop";
 import { GatewayStop } from "./GatewayStop";
+import { SCENE_ROADS } from "./Scene";
 import { Traveler } from "./Traveler";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -20,6 +21,42 @@ interface Anchor {
   y: number;
   gateway: boolean;
   len: number;
+}
+
+/** All paintings share this frame. */
+const IMG_RATIO = 1680 / 944;
+/** .scene__img / .hero__scene img are 112% tall (parallax headroom). */
+const IMG_H_FACTOR = 1.12;
+
+function parseFocus(s: string | undefined): [number, number] {
+  const m = s?.match(/([\d.]+)%\s+([\d.]+)%/);
+  return m ? [parseFloat(m[1]) / 100, parseFloat(m[2]) / 100] : [0.5, 0.5];
+}
+
+/**
+ * Map a point given as a fraction of the FULL painting to coordinates inside
+ * the (object-fit: cover, object-position: focus) crop shown by a figure —
+ * i.e. exactly where that spot of the artwork is rendered on screen.
+ * Returned coords are relative to the figure's top-left.
+ */
+function scenePoint(
+  fig: DOMRect,
+  fx: number,
+  fy: number,
+  px: number,
+  py: number,
+): { x: number; y: number } {
+  const boxW = fig.width;
+  const boxH = fig.height * IMG_H_FACTOR;
+  let iw = boxW;
+  let ih = boxW / IMG_RATIO;
+  if (ih < boxH) {
+    ih = boxH;
+    iw = boxH * IMG_RATIO;
+  }
+  const ox = (boxW - iw) * px;
+  const oy = (boxH - ih) * py;
+  return { x: ox + fx * iw, y: oy + fy * ih };
 }
 
 export function RoadJourney() {
@@ -33,7 +70,15 @@ export function RoadJourney() {
   const hazeRef = useRef<SVGPathElement>(null);
   const leadRef = useRef<SVGPathElement>(null);
   const travelerRef = useRef<HTMLDivElement>(null);
-  const cache = useRef<{ total: number; anchors: Anchor[]; gatewayLen: number } | null>(null);
+  const maskBaseRef = useRef<SVGRectElement>(null);
+  const maskScenesRef = useRef<SVGGElement>(null);
+  const cache = useRef<{
+    total: number;
+    anchors: Anchor[];
+    gatewayLen: number;
+    sampled: { l: number; y: number }[];
+    roadTop: number;
+  } | null>(null);
 
   // --- Smooth scroll (Lenis) synced to GSAP's ticker; skipped for reduced motion.
   useGSAP(
@@ -68,10 +113,14 @@ export function RoadJourney() {
       const markerEls = () =>
         Array.from(road.querySelectorAll<HTMLElement>("[data-marker]"));
 
-      /** Build the winding SVG path through the scenes and markers.
-       *  The line runs down the page centre — the same axis the scene
-       *  paintings' roads exit on — weaving gently between chapters so the
-       *  painted road and the drawn line read as one continuous road. */
+      /** Build the SVG path as ONE road with the paintings: it arrives at each
+       *  scene's painted-road horizon point, follows the painted road's bends
+       *  (SCENE_ROADS waypoints mapped through the live crop), and re-emerges
+       *  exactly where the painted road crosses the frame's bottom edge. An
+       *  SVG mask hides the stroke inside the paintings — there the PAINTED
+       *  road carries the journey and only the traveler dot rides across it.
+       *  Markers are shifted onto the road (each scene's exit x), so line →
+       *  number → card thread as one. */
       const buildPath = () => {
         const markers = markerEls();
         if (markers.length === 0) return;
@@ -81,30 +130,88 @@ export function RoadJourney() {
         const H = road.clientHeight;
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-        const anchors: Anchor[] = markers.map((m) => {
-          const r = m.getBoundingClientRect();
-          return {
-            x: r.left - roadRect.left + r.width / 2,
-            y: r.top - roadRect.top + r.height / 2,
-            gateway: m.hasAttribute("data-gateway"),
-            len: 0,
-          };
-        });
+        const cx = W / 2;
+        const ampSmall = isMobile ? 20 : 80; // weave for scene-less stretches
+        const clampX = (x: number) => Math.max(28, Math.min(W - 28, x));
 
-        const cx = W / 2; // markers sit on the page centre — so does the road
-        const amp = isMobile ? 26 : Math.min(W * 0.14, 170);
-
-        // Node list: centreline anchors with alternating bulges between them,
-        // starting at the very top of the section (the road emerges from the
-        // hero scene's feathered bottom edge).
         const pts: { x: number; y: number }[] = [];
-        pts.push({ x: cx, y: 0 });
-        for (let i = 0; i < anchors.length; i++) {
-          pts.push({ x: cx, y: anchors[i].y });
-          if (i < anchors.length - 1) {
-            const ymid = (anchors[i].y + anchors[i + 1].y) / 2;
-            const side = i % 2 === 0 ? 1 : -1;
-            pts.push({ x: cx + side * amp, y: ymid });
+        const anchors: Anchor[] = [];
+        const sceneRects: { top: number; h: number }[] = [];
+
+        // Start where the HERO painting's road crosses its bottom edge — the
+        // drawn line literally continues the picture above.
+        let startX = cx;
+        const heroFig = document.querySelector<HTMLElement>(".hero__scene");
+        const heroMeta = heroFig && SCENE_ROADS[heroFig.dataset.sceneId as keyof typeof SCENE_ROADS];
+        if (heroFig && heroMeta) {
+          const hr = heroFig.getBoundingClientRect();
+          const [hpx, hpy] = parseFocus(heroFig.dataset.focus);
+          startX = clampX(
+            hr.left - roadRect.left + scenePoint(hr, heroMeta.exit, 1, hpx, hpy).x,
+          );
+        }
+        pts.push({ x: startX, y: 0 });
+
+        // Walk scenes + markers in document order.
+        const els = Array.from(
+          road.querySelectorAll<HTMLElement>("[data-scene], [data-marker]"),
+        );
+        let pendingExitX: number | null = null;
+        let lastWasMarker = false;
+        let bulgeSide = 1;
+
+        for (const el of els) {
+          if (el.hasAttribute("data-scene")) {
+            const meta = SCENE_ROADS[el.dataset.sceneId as keyof typeof SCENE_ROADS];
+            const fr = el.getBoundingClientRect();
+            const fx0 = fr.left - roadRect.left;
+            const fy0 = fr.top - roadRect.top;
+            if (meta) {
+              const [px, py] = parseFocus(el.dataset.focus);
+              const eP = scenePoint(fr, meta.entry[0], meta.entry[1], px, py);
+              const entryX = clampX(fx0 + eP.x);
+              // Pre-entry node above the painting: the sideways swing toward
+              // the horizon point happens across the tall card zone, so the
+              // line always ENTERS the picture near-vertically (no flat
+              // full-width streaks in the sky).
+              const prevY = pts[pts.length - 1].y;
+              const preY = fy0 - (isMobile ? 80 : 140);
+              if (preY > prevY + 60) pts.push({ x: entryX, y: preY });
+              pts.push({ x: entryX, y: fy0 + Math.max(24, eP.y) });
+              for (const [mx, my] of meta.mids ?? []) {
+                const mP = scenePoint(fr, mx, my, px, py);
+                pts.push({ x: clampX(fx0 + mP.x), y: fy0 + mP.y });
+              }
+              pendingExitX = clampX(fx0 + scenePoint(fr, meta.exit, 1, px, py).x);
+              pts.push({ x: pendingExitX, y: fy0 + fr.height });
+              sceneRects.push({ top: fy0, h: fr.height });
+            }
+            lastWasMarker = false;
+          } else {
+            // Marker: park it where the painted road left the frame (or keep
+            // it centred on scene-less stops), THEN measure it.
+            el.style.transform =
+              pendingExitX != null
+                ? `translateX(${(pendingExitX - cx).toFixed(1)}px)`
+                : "";
+            const r = el.getBoundingClientRect();
+            const mx = r.left - roadRect.left + r.width / 2;
+            const my = r.top - roadRect.top + r.height / 2;
+            if (lastWasMarker) {
+              // Two markers with no painting between them: gentle weave.
+              const prev = pts[pts.length - 1];
+              pts.push({ x: cx + bulgeSide * ampSmall, y: (prev.y + my) / 2 });
+              bulgeSide = -bulgeSide;
+            }
+            pts.push({ x: mx, y: my });
+            anchors.push({
+              x: mx,
+              y: my,
+              gateway: el.hasAttribute("data-gateway"),
+              len: 0,
+            });
+            pendingExitX = null;
+            lastWasMarker = true;
           }
         }
         // NOTE: no trailing point — the path FINISHES exactly on the last
@@ -150,14 +257,57 @@ export function RoadJourney() {
         lead.style.strokeDashoffset = `${seg - gatewayLen}`;
         lead.style.opacity = "0";
 
-        cache.current = { total, anchors, gatewayLen };
+        // Mask: hide the stroke inside each painting (soft dissolve at the
+        // edges) — there the PAINTED road carries the journey.
+        const maskBase = maskBaseRef.current;
+        const maskScenes = maskScenesRef.current;
+        if (maskBase && maskScenes) {
+          maskBase.setAttribute("width", `${W}`);
+          maskBase.setAttribute("height", `${H}`);
+          maskScenes.textContent = "";
+          const NS = "http://www.w3.org/2000/svg";
+          for (const sr of sceneRects) {
+            const rect = document.createElementNS(NS, "rect");
+            rect.setAttribute("x", "0");
+            rect.setAttribute("width", `${W}`);
+            rect.setAttribute("y", `${sr.top}`);
+            rect.setAttribute("height", `${sr.h}`);
+            rect.setAttribute("fill", "url(#sceneHide)");
+            maskScenes.appendChild(rect);
+          }
+        }
+
+        cache.current = {
+          total,
+          anchors,
+          gatewayLen,
+          sampled,
+          roadTop: roadRect.top + window.scrollY,
+        };
       };
 
-      /** Apply the drawn fraction: reveal stroke, ride the traveler, light markers. */
-      const applyDraw = (progress: number) => {
+      /** Path length at a given page-y (both monotonic along the road). */
+      const lengthAtY = (y: number) => {
+        const c = cache.current;
+        if (!c) return 0;
+        const s = c.sampled;
+        if (y <= s[0].y) return 0;
+        if (y >= s[s.length - 1].y) return c.total;
+        let lo = 0;
+        let hi = s.length - 1;
+        while (hi - lo > 1) {
+          const mid = (lo + hi) >> 1;
+          if (s[mid].y < y) lo = mid;
+          else hi = mid;
+        }
+        const t = (y - s[lo].y) / Math.max(1e-6, s[hi].y - s[lo].y);
+        return s[lo].l + t * (s[hi].l - s[lo].l);
+      };
+
+      /** Apply a drawn length: reveal stroke, ride the traveler, light markers. */
+      const applyDraw = (drawn: number) => {
         const c = cache.current;
         if (!c) return;
-        const drawn = progress * c.total;
         strokes.forEach((p) => {
           p.style.strokeDashoffset = `${c.total - drawn}`;
         });
@@ -167,6 +317,15 @@ export function RoadJourney() {
         c.anchors.forEach((a, i) => {
           markers[i]?.classList.toggle("is-active", drawn >= a.len - 1);
         });
+      };
+
+      /** The sync rule: the draw head IS the middle of your screen. The dot is
+       *  always exactly where you're looking; markers light as they cross it. */
+      const drawAtViewport = () => {
+        const c = cache.current;
+        if (!c) return;
+        const focalY = window.scrollY + window.innerHeight * 0.5 - c.roadTop;
+        applyDraw(lengthAtY(focalY));
       };
 
       // ---- Reduced motion: show the finished road, everything lit, no scrub. ----
@@ -251,19 +410,20 @@ export function RoadJourney() {
         );
       }
 
-      // Main draw: scrubbed. End is the LAST marker (not the road bottom, which
-      // a short footer can't push to centre) so the line + traveler always reach
-      // and finish on the final number. 80% keeps it within reachable scroll.
-      const lastMarkerEl = markerEls().at(-1) ?? road;
+      // Main draw: active for the road's whole time on screen; the drawn head
+      // is computed from the viewport's focal line (see drawAtViewport), so
+      // line, paintings and text stay in lockstep with the reader.
       ScrollTrigger.create({
         trigger: road,
-        start: "top center",
-        endTrigger: lastMarkerEl,
-        end: "center 80%",
+        start: "top bottom",
+        end: "bottom top",
         scrub: true,
         invalidateOnRefresh: true,
-        onRefresh: buildPath,
-        onUpdate: (self) => applyDraw(self.progress),
+        onRefresh: () => {
+          buildPath();
+          drawAtViewport();
+        },
+        onUpdate: drawAtViewport,
       });
 
       // Gateway approach: siblings recede, lead glow brightens, ✦ pulses (tent curve).
@@ -284,7 +444,7 @@ export function RoadJourney() {
 
       // Initial geometry + traveler "drop in" at the start.
       buildPath();
-      applyDraw(0);
+      drawAtViewport();
       gsap.fromTo(
         traveler,
         { autoAlpha: 0, scale: 0.4 },
@@ -324,11 +484,25 @@ export function RoadJourney() {
             <filter id="roadGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3.5" />
             </filter>
+            {/* Inside a painting the stroke dissolves (luminance mask) and the
+                PAINTED road takes over — only the traveler dot crosses the art. */}
+            <linearGradient id="sceneHide" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#fff" />
+              <stop offset="0.14" stopColor="#000" />
+              <stop offset="0.86" stopColor="#000" />
+              <stop offset="1" stopColor="#fff" />
+            </linearGradient>
+            <mask id="roadMask" maskUnits="userSpaceOnUse">
+              <rect ref={maskBaseRef} x="0" y="0" fill="#fff" />
+              <g ref={maskScenesRef} />
+            </mask>
           </defs>
-          <path ref={hazeRef} className="road__haze" stroke="#f5a92c" fill="none" />
-          <path ref={glowRef} className="road__glow" stroke="#ffb845" fill="none" />
-          <path ref={pathRef} className="road__path" stroke="url(#roadGrad)" fill="none" />
-          <path ref={leadRef} className="road__lead" stroke="#ffe9b0" fill="none" filter="url(#roadGlow)" />
+          <g mask="url(#roadMask)">
+            <path ref={hazeRef} className="road__haze" stroke="#f5a92c" fill="none" />
+            <path ref={glowRef} className="road__glow" stroke="#ffb845" fill="none" />
+            <path ref={pathRef} className="road__path" stroke="url(#roadGrad)" fill="none" />
+            <path ref={leadRef} className="road__lead" stroke="#ffe9b0" fill="none" filter="url(#roadGlow)" />
+          </g>
         </svg>
         <Traveler ref={travelerRef} />
       </div>

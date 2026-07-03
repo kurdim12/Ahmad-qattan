@@ -250,7 +250,7 @@ const ar: LocaleContent = {
       scene: {
         id: "training",
         alt: "منصة صغيرة مضاءة في العراء وجمهور جالس تحت النجوم قرب الطريق",
-        focus: "68% 60%",
+        focus: "55% 60%",
       },
       items: [
         "[محتوى مبدئي] قيمة أولى",
@@ -458,7 +458,7 @@ const en: LocaleContent = {
       scene: {
         id: "training",
         alt: "A small open-air stage lit at night, an audience seated under the stars near the road",
-        focus: "68% 60%",
+        focus: "55% 60%",
       },
       items: [
         "[Placeholder] Value one",

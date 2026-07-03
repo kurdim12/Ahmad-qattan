@@ -62,7 +62,12 @@ export function Hero() {
     <header className="hero" ref={root}>
       {/* Full-bleed night-road painting — the journey starts inside the art,
           and its glowing road hands off to the drawn line below. */}
-      <figure className="hero__scene" aria-hidden>
+      <figure
+        className="hero__scene"
+        aria-hidden
+        data-scene-id={hero.scene.id}
+        data-focus={hero.scene.focus ?? "50% 50%"}
+      >
         <img
           src={`/assets/scenes/${hero.scene.id}.webp`}
           srcSet={`/assets/scenes/${hero.scene.id}-sm.webp 800w, /assets/scenes/${hero.scene.id}.webp 1600w`}
