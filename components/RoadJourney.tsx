@@ -379,19 +379,11 @@ export function RoadJourney() {
         );
       });
 
-      // Scenes: slow fade-up + a gentle parallax drift so the paintings feel
-      // like landscapes passing by, not stickers on the page.
+      // Scenes: a gentle parallax drift so the paintings feel like landscapes
+      // passing by. NO opacity/visibility animation here — hidden elements
+      // block lazy image loading, and a missed one-shot trigger would leave a
+      // chapter black. The paintings' masked feather is their reveal.
       gsap.utils.toArray<HTMLElement>("[data-scene]").forEach((fig) => {
-        gsap.fromTo(
-          fig,
-          { autoAlpha: 0 },
-          {
-            autoAlpha: 1,
-            duration: 1.4,
-            ease: "power2.out",
-            scrollTrigger: { trigger: fig, start: "top 88%", once: true },
-          },
-        );
         const img = fig.querySelector("img");
         if (img) {
           gsap.fromTo(

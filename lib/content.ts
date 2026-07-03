@@ -303,6 +303,11 @@ const ar: LocaleContent = {
       station: "الأثر",
       label: "بالأرقام",
       type: "stats",
+      scene: {
+        id: "impact",
+        alt: "أحجار معالم متوهجة على جانب طريق ذهبي يمتد نحو الأفق ليلًا",
+        focus: "50% 50%",
+      },
       stats: [
         { n: "٠٠+", l: "[محتوى مبدئي] مؤشر أول" },
         { n: "٠٠", l: "[محتوى مبدئي] مؤشر ثانٍ" },
@@ -314,6 +319,11 @@ const ar: LocaleContent = {
       station: "أصداء",
       label: "ماذا يقولون",
       type: "quotes",
+      scene: {
+        id: "testimonials",
+        alt: "نار مخيّم صغيرة يجلس حولها أشخاص قرب الطريق الذهبي تحت النجوم",
+        focus: "50% 50%",
+      },
       items: [
         {
           quote: "[محتوى مبدئي] اقتباس قصير من شخص تعامل مع أحمد.",
@@ -511,6 +521,11 @@ const en: LocaleContent = {
       station: "Impact",
       label: "By the numbers",
       type: "stats",
+      scene: {
+        id: "impact",
+        alt: "Glowing milestone stones along a golden road stretching toward the night horizon",
+        focus: "50% 50%",
+      },
       stats: [
         { n: "00+", l: "[Placeholder] Metric one" },
         { n: "00", l: "[Placeholder] Metric two" },
@@ -522,6 +537,11 @@ const en: LocaleContent = {
       station: "Echoes",
       label: "What they say",
       type: "quotes",
+      scene: {
+        id: "testimonials",
+        alt: "A small campfire with people seated around it beside the golden road under the stars",
+        focus: "50% 50%",
+      },
       items: [
         {
           quote: "[Placeholder] A short quote from someone who worked with Ahmad.",

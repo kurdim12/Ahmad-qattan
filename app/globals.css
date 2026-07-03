@@ -220,17 +220,17 @@ p {
   position: fixed;
   inset-block-start: 3.25rem;
   inset-inline: 0;
-  height: 3px;
+  height: 2px;
   z-index: 59;
-  background: rgba(255, 244, 214, 0.08);
+  background: rgba(255, 244, 214, 0.06);
 }
 .scrollbar__fill {
   display: block;
   height: 100%;
   transform-origin: inline-start;
   transform: scaleX(0);
-  background: linear-gradient(90deg, var(--gold-deep), var(--gold-soft));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 70%, transparent);
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+  opacity: 0.7;
 }
 
 /* =========================================================================

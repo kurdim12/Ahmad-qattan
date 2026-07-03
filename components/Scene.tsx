@@ -29,10 +29,11 @@ export const SCENE_ROADS: Record<SceneRef["id"], RoadMap> = {
   },
   "fork-arch": { entry: [0.47, 0.5], mids: [[0.65, 0.72]], exit: 0.8 },
   amman: { entry: [0.53, 0.52], mids: [[0.62, 0.7]], exit: 0.3 },
-  // These two exist only as portrait paintings (no wide art) — their wide
-  // maps are placeholders and unused until the tall art is in TALL_SCENES.
-  impact: { entry: [0.53, 0.44], exit: 0.4 },
-  testimonials: { entry: [0.62, 0.51], exit: 0.57 },
+  // These two ship as portrait paintings; the desktop "wide" files are 16:9
+  // bands cropped from them (impact: top 520/1536, testimonials: 640/1536) —
+  // the fractions below are remapped into those bands.
+  impact: { entry: [0.53, 0.27], mids: [[0.52, 0.56], [0.47, 0.83]], exit: 0.46 },
+  testimonials: { entry: [0.62, 0.25], mids: [[0.6, 0.49], [0.64, 0.76]], exit: 0.6 },
 };
 
 /**
@@ -43,7 +44,18 @@ export const SCENE_ROADS: Record<SceneRef["id"], RoadMap> = {
  * <id>-tall-sm.webp (640w), then add the id to TALL_SCENES to activate.
  * Road fractions below are pre-traced from the portrait paintings.
  */
-export const TALL_SCENES = new Set<SceneRef["id"]>([]);
+export const TALL_SCENES = new Set<SceneRef["id"]>([
+  "traveler",
+  "childhood",
+  "station",
+  "pen",
+  "training",
+  "fork-arch",
+  "dawn",
+  "amman",
+  "impact",
+  "testimonials",
+]);
 
 export const SCENE_ROADS_TALL: Record<SceneRef["id"], RoadMap> = {
   traveler: {
