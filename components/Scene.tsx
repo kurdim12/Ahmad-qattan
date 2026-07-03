@@ -1,5 +1,8 @@
 import type { SceneRef } from "@/lib/content";
 
+/** Build-time base path for subpath hosting (e.g. GitHub Pages). */
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 /**
  * Where the painted road lives inside each 1680×944 painting, as fractions of
  * the full image. The road engine routes the drawn line THROUGH these points:
@@ -130,8 +133,8 @@ export function Scene({
   const img = (
     <img
       className="scene__img"
-      src={`/assets/scenes/${scene.id}.webp`}
-      srcSet={`/assets/scenes/${scene.id}-sm.webp 800w, /assets/scenes/${scene.id}.webp 1600w`}
+      src={`${BASE}/assets/scenes/${scene.id}.webp`}
+      srcSet={`${BASE}/assets/scenes/${scene.id}-sm.webp 800w, ${BASE}/assets/scenes/${scene.id}.webp 1600w`}
       sizes="100vw"
       alt={scene.alt}
       loading={eager ? "eager" : "lazy"}
@@ -152,7 +155,7 @@ export function Scene({
           {/* Phones get the portrait painting — full composition, no crop. */}
           <source
             media="(max-width: 767px)"
-            srcSet={`/assets/scenes/${scene.id}-tall-sm.webp 640w, /assets/scenes/${scene.id}-tall.webp 1024w`}
+            srcSet={`${BASE}/assets/scenes/${scene.id}-tall-sm.webp 640w, ${BASE}/assets/scenes/${scene.id}-tall.webp 1024w`}
           />
           {img}
         </picture>

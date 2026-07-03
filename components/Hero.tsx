@@ -9,6 +9,9 @@ import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { TALL_SCENES } from "./Scene";
 
+/** Build-time base path for subpath hosting (e.g. GitHub Pages). */
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 gsap.registerPlugin(ScrollTrigger);
 
 /**
@@ -77,12 +80,12 @@ export function Hero() {
           {TALL_SCENES.has(hero.scene.id) ? (
             <source
               media="(max-width: 767px)"
-              srcSet={`/assets/scenes/${hero.scene.id}-tall-sm.webp 640w, /assets/scenes/${hero.scene.id}-tall.webp 1024w`}
+              srcSet={`${BASE}/assets/scenes/${hero.scene.id}-tall-sm.webp 640w, ${BASE}/assets/scenes/${hero.scene.id}-tall.webp 1024w`}
             />
           ) : null}
           <img
-            src={`/assets/scenes/${hero.scene.id}.webp`}
-            srcSet={`/assets/scenes/${hero.scene.id}-sm.webp 800w, /assets/scenes/${hero.scene.id}.webp 1600w`}
+            src={`${BASE}/assets/scenes/${hero.scene.id}.webp`}
+            srcSet={`${BASE}/assets/scenes/${hero.scene.id}-sm.webp 800w, ${BASE}/assets/scenes/${hero.scene.id}.webp 1600w`}
             sizes="100vw"
             alt=""
             loading="eager"
