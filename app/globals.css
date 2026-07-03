@@ -530,7 +530,9 @@ p {
                  the art as light, through the feathered edges */
   width: 100%;
   margin: 0;
-  aspect-ratio: 7 / 8; /* mobile-first: tall cinematic crop */
+  /* Mobile: 1:1 shows ~56% of the wide painting (7:8 showed only 49% and
+     gutted compositions). Portrait scene art can replace this later. */
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 84%, transparent 100%);
   mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 84%, transparent 100%);
@@ -1048,4 +1050,58 @@ p {
 .has-motion .reveal,
 .has-motion .reveal-gateway {
   opacity: 0;
+}
+
+/* =========================================================================
+   MOBILE POLISH — slimmer light, tighter rhythm, no GPU-heavy blur
+   ========================================================================= */
+@media (max-width: 767px) {
+  /* The road light scaled for a narrow screen. */
+  .road__haze {
+    stroke-width: 11;
+  }
+  .road__glow {
+    stroke-width: 5;
+  }
+  .road__path {
+    stroke-width: 2.75;
+  }
+  .traveler__core {
+    width: 0.7rem;
+    height: 0.7rem;
+  }
+
+  /* Tighter journey rhythm; smaller lanterns. */
+  :root {
+    --marker: 2.5rem;
+  }
+  .stop {
+    padding-block: clamp(1rem, 3.5vh, 2rem);
+    row-gap: 0.9rem;
+  }
+  .road {
+    padding-block-end: 2.5rem;
+  }
+
+  /* backdrop-filter is expensive on low-end phones — trade the blur for a
+     slightly deeper glass so scrolling stays 60fps. */
+  .card,
+  .gateway {
+    backdrop-filter: none;
+  }
+  .card {
+    background: color-mix(in srgb, var(--night-1) 94%, transparent);
+  }
+  .gateway {
+    background: color-mix(in srgb, var(--night-1) 95%, transparent);
+  }
+  .topbar {
+    backdrop-filter: none;
+  }
+
+  /* Hero: keep the CTA reachable and the composition breathing. */
+  .hero {
+    padding-block-end: 3.5rem;
+    gap: 1rem;
+  }
 }
