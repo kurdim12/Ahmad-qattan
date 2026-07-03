@@ -384,7 +384,9 @@ html.is-dawn .road-line__branch {
   width: 100%;
   height: 108%;
   object-fit: cover;
-  object-position: center;
+  /* --focus-x keeps each scene's subject in frame on narrow viewports;
+     the line maps through the same value (coverTransform fx). */
+  object-position: var(--focus-x, 50%) center;
   user-select: none;
   will-change: transform;
 }
@@ -414,6 +416,24 @@ html.is-dawn .road-line__branch {
   width: auto;
   height: 44%;
   object-fit: contain;
+}
+
+/* Narrow viewports: the frames crop hard — keep the subjects in frame and
+   soften the fork's side curtains; the boy scales down with the scene. */
+@media (max-aspect-ratio: 4/5) {
+  .scene--childhood .scene__fg-wrap > .scene__media--fg {
+    height: 30%;
+    inset-inline-start: 6%;
+  }
+  .scene--fork .scene__frame {
+    --fuse-side: 7%;
+  }
+  .gateway__word {
+    display: none; /* decorative backdrop word collides with the card here */
+  }
+  .gateway {
+    margin-block-start: 2.2rem;
+  }
 }
 
 /* The narrative card — appears when the light reaches the stop. */

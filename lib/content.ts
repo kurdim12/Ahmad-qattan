@@ -26,6 +26,9 @@ export interface SceneAsset {
   portrait?: string;
   /** Per-frame CSS filter nudge that converges the frames into one grade. */
   grade?: string;
+  /** Horizontal focus (object-position x, 0–1) so narrow viewports keep the
+   *  scene's subject in frame. The line maps through the same value. */
+  focusX?: number;
 }
 
 export interface Scene {
@@ -74,6 +77,7 @@ export const scenes: Scene[] = [
       fg: `${SRC}/scene-02-fg.png`,
       grade:
         "sepia(0.45) saturate(1.3) hue-rotate(-16deg) brightness(0.78) contrast(1.1)",
+      focusX: 0.44,
     },
     path: "M 1215 641 C 1198.8 644.5 1150.5 653.8 1118 662 C 1085.5 670.2 1034.7 679.5 1020 690 C 1005.3 700.5 1013.3 714.7 1030 725 C 1046.7 735.3 1100.0 742.8 1120 752 C 1140.0 761.2 1160.0 767.0 1150 780 C 1140.0 793.0 1105.0 817.5 1060 830 C 1015.0 842.5 973.3 861.3 930 875 C 886.7 888.7 830.0 899.8 800 912 C 770.0 924.2 758.3 936.2 750 941",
     live: ["kite", "flicker"],
@@ -91,6 +95,7 @@ export const scenes: Scene[] = [
     asset: {
       base: `${SRC}/scene-03-station.png`,
       grade: "saturate(1.05) contrast(1.02)",
+      focusX: 0.36,
     },
     path: "M 60 905 C 133.3 897.8 360.0 877.5 500 862 C 640.0 846.5 766.7 829.3 900 812 C 1033.3 794.7 1173.3 776.7 1300 758 C 1426.7 739.3 1600.0 709.7 1660 700",
     live: ["steam", "flicker"],
@@ -108,6 +113,7 @@ export const scenes: Scene[] = [
     asset: {
       base: `${SRC}/scene-04-pen.png`,
       grade: "saturate(1.05) contrast(1.02)",
+      focusX: 0.42,
     },
     path: "M 1292 592 C 1300.8 600.8 1343.7 627.0 1345 645 C 1346.3 663.0 1330.8 682.5 1300 700 C 1269.2 717.5 1211.7 733.3 1160 750 C 1108.3 766.7 1046.7 783.3 990 800 C 933.3 816.7 876.7 833.3 820 850 C 763.3 866.7 696.7 884.8 650 900 C 603.3 915.2 558.3 934.2 540 941",
     live: ["papers"],
@@ -125,6 +131,7 @@ export const scenes: Scene[] = [
     asset: {
       base: `${SRC}/scene-05-training.png`,
       grade: "saturate(1.05) contrast(1.02)",
+      focusX: 0.62,
     },
     path: "M 430 447 C 451.7 450.3 521.7 460.3 560 467 C 598.3 473.7 653.3 477.8 660 487 C 666.7 496.2 626.7 511.8 600 522 C 573.3 532.2 524.2 540.0 500 548 C 475.8 556.0 466.7 561.3 455 570 C 443.3 578.7 450.8 587.5 430 600 C 409.2 612.5 371.7 629.2 330 645 C 288.3 660.8 231.7 679.5 180 695 C 128.3 710.5 46.7 730.8 20 738",
     live: ["flicker"],
@@ -142,6 +149,7 @@ export const scenes: Scene[] = [
     asset: {
       base: `${SRC}/scene-06-fork-arch.png`,
       grade: "saturate(1.03) contrast(1.01)",
+      focusX: 0.42,
     },
     path: "M 1440 585 C 1448.3 589.2 1493.3 600.0 1490 610 C 1486.7 620.0 1453.3 630.0 1420 645 C 1386.7 660.0 1331.7 682.5 1290 700 C 1248.3 717.5 1203.3 733.3 1170 750 C 1136.7 766.7 1116.7 780.0 1090 800 C 1063.3 820.0 1031.7 846.5 1010 870 C 988.3 893.5 968.3 929.2 960 941",
     branch:
@@ -176,6 +184,7 @@ export const scenes: Scene[] = [
     asset: {
       base: `${SRC}/scene-08-traveler.png`,
       grade: "saturate(1.08) hue-rotate(-6deg) brightness(0.97)",
+      focusX: 0.47,
     },
     path: "M 855 575 C 850.8 580.8 840.0 595.8 830 610 C 820.0 624.2 806.7 643.3 795 660 C 783.3 676.7 770.8 693.3 760 710 C 749.2 726.7 738.3 743.3 730 760 C 721.7 776.7 716.7 790.0 710 810 C 703.3 830.0 695.8 858.2 690 880 C 684.2 901.8 677.5 930.8 675 941",
     title: { ar: "اليوم", en: "Today" },

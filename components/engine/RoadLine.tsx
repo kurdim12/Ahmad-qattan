@@ -86,10 +86,12 @@ export function RoadLine() {
         const fitted = usePortrait ? scene.pathPortrait! : scene.path;
         const iw = usePortrait ? 941 : 1672;
         const ih = usePortrait ? 1672 : 941;
-        // Map into the overscanned media box the parallax layer renders in.
+        // Map into the overscanned media box the parallax layer renders in,
+        // honoring the scene's horizontal focus (object-position).
         const boxH = r.height * OVERSCAN_SCALE;
         const boxTop = top - r.height * OVERSCAN_TOP;
-        const { s, ox, oy } = coverTransform(iw, ih, r.width, boxH);
+        const fx = usePortrait ? 0.5 : (scene.asset.focusX ?? 0.5);
+        const { s, ox, oy } = coverTransform(iw, ih, r.width, boxH, fx);
         const map = (p: Pt): Pt => ({
           x: left + ox + p.x * s,
           y: boxTop + oy + p.y * s,

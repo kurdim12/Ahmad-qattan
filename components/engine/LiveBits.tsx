@@ -59,15 +59,16 @@ export function LiveBits({ scene }: { scene: Scene }) {
   useEffect(() => {
     const el = ref.current?.parentElement;
     if (!el) return;
+    const fx = scene.asset.focusX ?? 0.5;
     const measure = () => {
       const r = el.getBoundingClientRect();
-      setBox(coverTransform(1672, 941, r.width, r.height));
+      setBox(coverTransform(1672, 941, r.width, r.height, fx));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [scene.asset.focusX]);
 
   if (reduced) return <div ref={ref} className="livebits" aria-hidden />;
 

@@ -178,6 +178,9 @@ export function SceneShell({
     maskStyle["--fuse-bottom"] = `${fusion.wide.bottom}%`;
   }
   if (scene.asset.grade) maskStyle["--grade"] = scene.asset.grade;
+  if (scene.asset.focusX !== undefined) {
+    maskStyle["--focus-x"] = `${scene.asset.focusX * 100}%`;
+  }
 
   const kiteBob = !reduced && scene.live?.includes("kite");
 

@@ -39,15 +39,17 @@ export function Fitter() {
     }
   }, [d, scene, branchMode]);
 
+  const fx = scene?.asset.focusX ?? 0.5;
+
   const onClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const box = e.currentTarget.getBoundingClientRect();
-      const { s, ox, oy } = coverTransform(iw, ih, box.width, box.height);
+      const { s, ox, oy } = coverTransform(iw, ih, box.width, box.height, fx);
       const x = (e.clientX - box.left - ox) / s;
       const y = (e.clientY - box.top - oy) / s;
       setPts((p) => [...p, { x: Math.round(x), y: Math.round(y) }]);
     },
-    [iw, ih],
+    [iw, ih, fx],
   );
 
   useEffect(() => {
@@ -69,10 +71,13 @@ export function Fitter() {
     <div className="fitter" onClick={onClick}>
       <div
         className="fitter__stage"
-        style={{ backgroundImage: `url(${scene.asset.base})` }}
+        style={{
+          backgroundImage: `url(${scene.asset.base})`,
+          backgroundPosition: `${fx * 100}% 50%`,
+        }}
       />
       <svg className="fitter__overlay" aria-hidden>
-        <FitPreview pts={pts} d={previewD} iw={iw} ih={ih} />
+        <FitPreview pts={pts} d={previewD} iw={iw} ih={ih} fx={fx} />
       </svg>
       <div className="fitter__panel" dir="ltr" onClick={(e) => e.stopPropagation()}>
         <select
@@ -114,11 +119,13 @@ function FitPreview({
   d,
   iw,
   ih,
+  fx,
 }: {
   pts: Pt[];
   d: string;
   iw: number;
   ih: number;
+  fx: number;
 }) {
   const [box, setBox] = useState({ w: 0, h: 0 });
   useEffect(() => {
@@ -128,7 +135,7 @@ function FitPreview({
     return () => window.removeEventListener("resize", update);
   }, []);
   if (!box.w) return null;
-  const { s, ox, oy } = coverTransform(iw, ih, box.w, box.h);
+  const { s, ox, oy } = coverTransform(iw, ih, box.w, box.h, fx);
   return (
     <g transform={`translate(${ox} ${oy}) scale(${s})`}>
       {d && (

@@ -12,15 +12,18 @@ export interface Pt {
 }
 
 /** background-size:cover / object-fit:cover mapping of an iw×ih image into a
- *  bw×bh box (centered). Returns scale + offsets. */
+ *  bw×bh box. `fx` is the horizontal focus fraction (object-position x) —
+ *  0.5 = centered; smaller keeps more of the image's left side in frame on
+ *  narrow viewports. The line and live bits use the SAME fx as the CSS. */
 export function coverTransform(
   iw: number,
   ih: number,
   bw: number,
   bh: number,
+  fx = 0.5,
 ) {
   const s = Math.max(bw / iw, bh / ih);
-  return { s, ox: (bw - iw * s) / 2, oy: (bh - ih * s) / 2 };
+  return { s, ox: (bw - iw * s) * fx, oy: (bh - ih * s) / 2 };
 }
 
 /** Affine-transform every coordinate of a fitted "M … C …" `d` string —
