@@ -15,6 +15,14 @@ import { Traveler } from "./Traveler";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
+// Real phones resize the viewport every time the address bar hides/shows —
+// without this, ScrollTrigger refreshes (and we rebuild the whole road)
+// repeatedly MID-SCROLL, which reads as jank. Ignore those resizes; a true
+// orientation/width change still triggers a full refresh.
+if (typeof window !== "undefined") {
+  ScrollTrigger.config({ ignoreMobileResize: true });
+}
+
 interface Anchor {
   x: number;
   y: number;
@@ -76,6 +84,7 @@ export function RoadJourney() {
     gatewayLen: number;
     sampled: { l: number; y: number }[];
     roadTop: number;
+    markers: HTMLElement[];
   } | null>(null);
 
   // --- Smooth scroll (Lenis) synced to GSAP's ticker; skipped for reduced motion.
@@ -264,6 +273,7 @@ export function RoadJourney() {
           gatewayLen,
           sampled,
           roadTop: roadRect.top + window.scrollY,
+          markers,
         };
       };
 
@@ -308,9 +318,8 @@ export function RoadJourney() {
         );
         traveler.style.opacity = String(endFade);
         trail.style.opacity = String(endFade * 0.8);
-        const markers = markerEls();
         c.anchors.forEach((a, i) => {
-          markers[i]?.classList.toggle("is-active", drawn >= a.len - 1);
+          c.markers[i]?.classList.toggle("is-active", drawn >= a.len - 1);
         });
       };
 

@@ -155,7 +155,6 @@ p {
       var(--night-0) 45%,
       color-mix(in srgb, #060810 calc(100% - var(--warmth) * 30%), #241505) 100%
     );
-  transition: background 0.4s linear;
 }
 
 .starfield {
