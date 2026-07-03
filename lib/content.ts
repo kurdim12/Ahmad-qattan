@@ -2,18 +2,16 @@
 // content.ts — SINGLE SOURCE OF TRUTH for all copy (AR + EN).
 // The client edits everything here, in one place.
 //
-// Every string below the meta block is PLACEHOLDER and marked with
-//   [محتوى مبدئي]  (Arabic)   /   [Placeholder]  (English).
-// The Think Equality gateway URL is the placeholder `#` until the client
-// supplies the real address (see README → "Where real content goes").
+// AUTHENTICITY RULE (from the creative direction): never invent biography,
+// achievements, quotes or statistics. Every string that awaits Ahmad's real
+// words is marked [محتوى مبدئي] (AR) / [Placeholder] (EN).
 // =============================================================================
 
 export type Locale = "ar" | "en";
 
-/** One of the night-road scene paintings in public/assets/scenes/.
- *  `id` maps to `<id>.webp` (1600w) + `<id>-sm.webp` (800w).
- *  `focus` is the CSS object-position used when the image is cropped
- *  (mobile shows a taller 4:3 crop of the 16:9 art). */
+/** One of the night-road paintings in public/assets/scenes/.
+ *  `id` maps to `<id>.webp` (wide, desktop) + `<id>-tall.webp` (2:3, phones).
+ *  `focus` is the CSS object-position for the wide crop. */
 export interface SceneRef {
   id:
     | "traveler"
@@ -30,73 +28,35 @@ export interface SceneRef {
   focus?: string;
 }
 
-/** A milestone on the road. Discriminated union keyed by `type`. */
-type StopVariant =
-  // Plain narrative stop (About, Story, ...) — optional body paragraphs.
-  | { key: string; station: string; label: string; body?: string[] }
-  // Services: an icon list of what he does.
-  | {
-      key: string;
-      station: string;
-      label: string;
-      type: "services";
-      body?: string[];
-      items: { name: string; desc: string; icon: ServiceIcon }[];
-    }
-  // Values / Ventures: chips. A chip can be a plain string or flagged as a feature.
-  | {
-      key: string;
-      station: string;
-      label: string;
-      type: "chips";
-      body?: string[];
-      items: (string | { t: string; feature?: boolean })[];
-    }
-  // Impact: headline stats.
-  | {
-      key: string;
-      station: string;
-      label: string;
-      type: "stats";
-      body?: string[];
-      stats: { n: string; l: string }[];
-    }
-  // Testimonials: short quotes.
-  | {
-      key: string;
-      station: string;
-      label: string;
-      type: "quotes";
-      items: { quote: string; who: string }[];
-    }
-  // Contact / destination: WhatsApp CTA + location + closing line.
-  | {
-      key: string;
-      station: string;
-      label: string;
-      type: "contact";
-      body?: string[];
-      whatsapp: { label: string; number: string; href: string };
-      location: string;
-      closing: string;
-    }
-  // Think Equality GATEWAY — the fork in the road. Opens an external site.
-  | {
-      key: string;
-      station: string;
-      label: string;
-      type: "gateway";
-      name: string;
-      tag: string;
-      body: string;
-      cta: string;
-      url: string; // external — placeholder "#" until client supplies it
-    };
-
-/** Every stop may carry a scene painting that the road line travels through. */
-export type Stop = StopVariant & { scene?: SceneRef };
-
-export type ServiceIcon = "pen" | "users" | "layers" | "spark";
+/** A chapter of the journey. The visitor never leaves the road:
+ *  scene (a painting the road passes through) → chapter word → words/beat. */
+export interface Chapter {
+  key: string;
+  /** The huge chapter word — a title card carved over the night. */
+  word: string;
+  /** Small kicker above the word (chapter numbering as prose, not UI). */
+  kicker: string;
+  /** Ink paragraphs. Optional — some chapters speak through their beat. */
+  body?: string[];
+  scene: SceneRef;
+  /** Optional second painting inside the chapter (dawn after the arch,
+   *  the campfire under the voices). */
+  scene2?: SceneRef;
+  /** The craft list — typographic, no icons. */
+  craft?: { name: string; desc: string }[];
+  /** Headline numbers. Never fabricated — placeholders stay ٠٠ until real. */
+  stats?: { n: string; l: string }[];
+  /** Roadside voices — named, outcome-specific quotes. */
+  voices?: { quote: string; who: string }[];
+  /** The crossing — Think Equality. */
+  gateway?: { name: string; tag: string; body: string; cta: string; url: string };
+  /** The destination block. */
+  contact?: {
+    whatsapp: { label: string; number: string; href: string };
+    location: string;
+    closing: string;
+  };
+}
 
 export interface LocaleContent {
   meta: {
@@ -109,32 +69,26 @@ export interface LocaleContent {
   };
   ui: {
     skip: string;
-    toggleTo: string; // label shown on the toggle (the OTHER language)
+    toggleTo: string;
     toggleAria: string;
     progressAria: string;
-    explore: string;
     scrollHint: string;
-    openExternal: string; // a11y suffix for external links
-    readMore: string;
-    readLess: string;
+    openExternal: string;
+    contactPill: string;
     portalEntering: string;
-    portalClose: string;
-    portalHint: string;
     footnote: string;
   };
   hero: {
+    /** Small line above the name — who he is. */
     eyebrow: string;
+    /** THE landmark. */
     name: string;
-    wildcard: string;
-    intro: string;
+    /** One plain sentence: who he helps and what changes for them. */
+    positioning: string;
     cta: string;
-    /** Hero portrait. Drop the real photo at public/ahmad-qattan.jpg (same name,
-     *  square works best) — no code change needed. Falls back to a monogram. */
-    portrait: { src: string; alt: string };
-    /** Full-bleed night-road painting behind the hero. */
     scene: SceneRef;
   };
-  stops: Stop[];
+  chapters: Chapter[];
 }
 
 export type Content = Record<Locale, LocaleContent>;
@@ -144,168 +98,134 @@ export type Content = Record<Locale, LocaleContent>;
 // -----------------------------------------------------------------------------
 const ar: LocaleContent = {
   meta: {
-    title: "أحمد قطان — الطريق",
+    title: "أحمد قطان — الرحلة",
     description:
-      "[محتوى مبدئي] الموقع الشخصي لأحمد قطان، كاتب ومدرّب — رحلة على الطريق من الذهبي إلى الأبيض، حيث كل محطة فصل من قصته.",
-    ogTitle: "أحمد قطان — الطريق",
+      "[محتوى مبدئي] رحلة على طريق مضيء في ليل الصحراء الأردنية — حياة أحمد قطان، كاتب ومدرّب، فصلًا بعد فصل حتى عمّان.",
+    ogTitle: "أحمد قطان — الرحلة",
     ogDescription:
-      "[محتوى مبدئي] كاتب ومدرّب، والخيط الذي يربط عدة مشاريع. سِر على الطريق واكتشف القصة.",
+      "[محتوى مبدئي] كاتب ومدرّب. طريق واحد يعبر الليل نحو عمّان — سِر معه.",
     siteName: "أحمد قطان",
-    keywords: ["أحمد قطان", "كاتب", "مدرّب", "ثينك إكوالٿي", "محتوى", "تدريب"],
+    keywords: ["أحمد قطان", "كاتب", "مدرّب", "ثينك إكوالتي", "عمّان", "الأردن"],
   },
   ui: {
     skip: "تجاوز إلى المحتوى",
     toggleTo: "EN",
     toggleAria: "التبديل إلى الإنجليزية",
-    progressAria: "تقدّم القراءة على الطريق",
-    explore: "اكتشف القصة",
-    scrollHint: "انزل على الطريق",
+    progressAria: "الرحلة على الطريق",
+    scrollHint: "سِر على الطريق",
     openExternal: "(يفتح في نافذة جديدة)",
-    readMore: "اقرأ المزيد",
-    readLess: "اعرض أقل",
-    portalEntering: "ندخل إلى ثينك إكوالٿي…",
-    portalClose: "إغلاق",
-    portalHint: "اضغط للدخول إلى ثينك إكوالٿي",
-    footnote: "[محتوى مبدئي] جميع النصوص مبدئية وقابلة للتعديل.",
+    contactPill: "تواصل",
+    portalEntering: "نعبر إلى ثينك إكوالتي…",
+    footnote: "[محتوى مبدئي] جميع النصوص مبدئية بانتظار كلمات أحمد الحقيقية.",
   },
   hero: {
     eyebrow: "كاتب ومدرّب",
     name: "أحمد قطان",
-    wildcard: "الخيط الذي يربط كل شيء",
-    intro:
-      "[محتوى مبدئي] جملة تعريفية قصيرة عن أحمد: من يكون، وما الذي يجمع بين كل ما يفعله. تُكتب هنا بضع كلمات تمهّد للرحلة على الطريق.",
-    cta: "اكتشف القصة",
-    portrait: { src: "/ahmad-qattan.jpg", alt: "أحمد قطان" },
+    positioning:
+      "[محتوى مبدئي] جملة واحدة واضحة: من يساعد أحمد، وما الذي يتغيّر في حياتهم بعد أن يلتقوه.",
+    cta: "ابدأ الرحلة",
     scene: {
       id: "traveler",
-      alt: "مسافر يقف على طريق صحراوي مضيء ليلًا يتأمل الأفق",
+      alt: "مسافر يقف على طريق ذهبي مضيء وسط ليل الصحراء، يتأمل ضوء الأفق",
       focus: "42% 62%",
     },
   },
-  stops: [
+  chapters: [
     {
-      key: "about",
-      station: "نقطة الانطلاق",
-      label: "من هو أحمد قطان",
+      key: "beginning",
+      kicker: "الفصل الأول",
+      word: "البداية",
       scene: {
         id: "childhood",
-        alt: "طفل يمشي على طريق متوهّج ليلًا وطائرة ورقية في السماء",
+        alt: "طفل يمشي على طريق متوهّج ليلًا، وطائرة ورقية مضيئة في السماء",
         focus: "42% 65%",
       },
       body: [
-        "[محتوى مبدئي] فقرة قصيرة تعرّف بأحمد قطان: خلفيته، وما الذي يميّز صوته ككاتب ومدرّب.",
-        "[محتوى مبدئي] فقرة ثانية توضح «الخيط المشترك» الذي يربط بين مشاريعه المختلفة، وكيف يظهر هذا الخيط في كل ما يقدّمه.",
+        "[محتوى مبدئي] من أين بدأ الطريق: البيت الأول، الضوء الأول، أول كلمة قرأها فغيّرت شيئًا في داخله.",
+        "[محتوى مبدئي] سطر يمهّد لما ستصبح عليه هذه البداية لاحقًا.",
       ],
     },
     {
-      key: "story",
-      station: "الطريق",
-      label: "الرحلة",
+      key: "road",
+      kicker: "الفصل الثاني",
+      word: "الطريق",
       scene: {
         id: "station",
-        alt: "استراحة شاي صغيرة مضاءة على جانب الطريق ليلًا",
+        alt: "استراحة شاي صغيرة مضاءة على كتف الطريق في الليل",
         focus: "35% 58%",
       },
       body: [
-        "[محتوى مبدئي] سرد مختصر للرحلة: البداية، نقطة التحوّل، وإلى أين وصل الطريق اليوم.",
-        "[محتوى مبدئي] سطر إضافي يربط الماضي بالحاضر ويمهّد لما يفعله الآن.",
+        "[محتوى مبدئي] سنوات المشي: المحطات التي توقّف عندها، وما تعلّمه من كل استراحة على الطريق.",
+        "[محتوى مبدئي] نقطة التحوّل التي جعلت الكتابة قرارًا لا صدفة.",
       ],
     },
     {
-      key: "services",
-      station: "المهارات",
-      label: "ماذا يفعل",
-      type: "services",
+      key: "craft",
+      kicker: "الفصل الثالث",
+      word: "الحرفة",
       scene: {
         id: "pen",
-        alt: "نصب على شكل ريشة قلم بجانب الطريق وأوراق تتطاير في سماء الليل",
+        alt: "نصب حجري على شكل ريشة قلم يقف قرب الطريق، وأوراق مضيئة تتطاير منه",
         focus: "40% 58%",
       },
-      items: [
-        {
-          name: "[محتوى مبدئي] الكتابة",
-          desc: "[محتوى مبدئي] وصف موجز لخدمة الكتابة.",
-          icon: "pen",
-        },
-        {
-          name: "[محتوى مبدئي] التدريب",
-          desc: "[محتوى مبدئي] وصف موجز لورش العمل والتدريب.",
-          icon: "users",
-        },
-        {
-          name: "[محتوى مبدئي] صناعة المحتوى",
-          desc: "[محتوى مبدئي] وصف موجز لإنتاج المحتوى.",
-          icon: "layers",
-        },
-        {
-          name: "[محتوى مبدئي] المبادرات",
-          desc: "[محتوى مبدئي] وصف موجز للمبادرات والمشاريع.",
-          icon: "spark",
-        },
+      body: [
+        "[محتوى مبدئي] سطر واحد يلخّص علاقته بالكلمة: لماذا يكتب، ولمن.",
+      ],
+      craft: [
+        { name: "الكتابة", desc: "[محتوى مبدئي] وصف من سطر واحد." },
+        { name: "التدريب", desc: "[محتوى مبدئي] وصف من سطر واحد." },
+        { name: "صناعة المحتوى", desc: "[محتوى مبدئي] وصف من سطر واحد." },
+        { name: "المبادرات", desc: "[محتوى مبدئي] وصف من سطر واحد." },
       ],
     },
     {
-      key: "values",
-      station: "البوصلة",
-      label: "بماذا يؤمن",
-      type: "chips",
+      key: "voice",
+      kicker: "الفصل الرابع",
+      word: "الصوت",
       scene: {
         id: "training",
         alt: "منصة صغيرة مضاءة في العراء وجمهور جالس تحت النجوم قرب الطريق",
         focus: "55% 60%",
       },
-      items: [
-        "[محتوى مبدئي] قيمة أولى",
-        "[محتوى مبدئي] قيمة ثانية",
-        "[محتوى مبدئي] قيمة ثالثة",
-        "[محتوى مبدئي] قيمة رابعة",
-        "[محتوى مبدئي] قيمة خامسة",
-      ],
-    },
-    {
-      key: "ventures",
-      station: "المشاريع",
-      label: "خلف كل ذلك",
-      type: "chips",
-      scene: {
-        id: "dawn",
-        alt: "طريق ذهبي متعرّج يقطع الصحراء كاملة نحو شمس منخفضة",
-        focus: "55% 50%",
-      },
       body: [
-        "[محتوى مبدئي] فقرة تُرسّخ فكرة «الورقة الرابحة»: أحمد هو الخيط خلف عدة مشاريع. إحداها مفترق طريق.",
-      ],
-      items: [
-        "[محتوى مبدئي] مشروع أول",
-        "[محتوى مبدئي] مشروع ثانٍ",
-        { t: "Think Equality", feature: true },
-        "[محتوى مبدئي] مشروع رابع",
+        "[محتوى مبدئي] حين وقف أمام الناس أول مرة: ما الذي يؤمن به، وما الذي يحاول أن يوقظه في من يدرّبهم.",
+        "[محتوى مبدئي] سطر عن القيم التي لا يساوم عليها.",
       ],
     },
     {
-      key: "think-equality",
-      station: "مفترق الطريق",
-      label: "ثينك إكوالٿي",
-      type: "gateway",
+      key: "crossing",
+      kicker: "الفصل الخامس",
+      word: "العبور",
       scene: {
         id: "fork-arch",
-        alt: "قوس حجري عند مفترق طريق: جهة يغمرها ضوء الفجر وجهة في عتمة الليل",
+        alt: "قوس حجري قديم عند مفترق: عبره يبدأ ضوء الفجر، وحوله يستمر الليل",
         focus: "45% 52%",
       },
-      name: "Think Equality",
-      tag: "[محتوى مبدئي] الوسم القصير للبوابة",
-      body: "[محتوى مبدئي] جملة تدعو الزائر لعبور البوابة إلى موقع ثينك إكوالٿي المستقل.",
-      cta: "ادخل إلى ثينك إكوالٿي",
-      url: "#",
+      scene2: {
+        id: "dawn",
+        alt: "الطريق الذهبي يعبر الصحراء كلها نحو شمس منخفضة — العالم بعد العبور",
+        focus: "55% 50%",
+      },
+      gateway: {
+        name: "Think Equality",
+        tag: "[محتوى مبدئي] ما هي ثينك إكوالتي في سطر.",
+        body: "[محتوى مبدئي] ليست موقعًا آخر — إنها ما صنعته الرحلة. جملة تدعو الزائر للعبور.",
+        cta: "اعبر البوابة",
+        url: "#",
+      },
     },
     {
       key: "impact",
-      station: "الأثر",
-      label: "بالأرقام",
-      type: "stats",
+      kicker: "الفصل السادس",
+      word: "الأثر",
       scene: {
         id: "impact",
-        alt: "أحجار معالم متوهجة على جانب طريق ذهبي يمتد نحو الأفق ليلًا",
+        alt: "أحجار معالم متوهجة على جانب الطريق الذهبي الممتد نحو الأفق",
+        focus: "50% 50%",
+      },
+      scene2: {
+        id: "testimonials",
+        alt: "نار مخيّم صغيرة يجلس حولها رفاق الطريق تحت النجوم",
         focus: "50% 50%",
       },
       stats: [
@@ -313,217 +233,171 @@ const ar: LocaleContent = {
         { n: "٠٠", l: "[محتوى مبدئي] مؤشر ثانٍ" },
         { n: "٠٠+", l: "[محتوى مبدئي] مؤشر ثالث" },
       ],
-    },
-    {
-      key: "testimonials",
-      station: "أصداء",
-      label: "ماذا يقولون",
-      type: "quotes",
-      scene: {
-        id: "testimonials",
-        alt: "نار مخيّم صغيرة يجلس حولها أشخاص قرب الطريق الذهبي تحت النجوم",
-        focus: "50% 50%",
-      },
-      items: [
+      voices: [
         {
-          quote: "[محتوى مبدئي] اقتباس قصير من شخص تعامل مع أحمد.",
+          quote: "[محتوى مبدئي] اقتباس حقيقي محدد الأثر من شخص عمل مع أحمد.",
           who: "[محتوى مبدئي] الاسم، الصفة",
         },
         {
-          quote: "[محتوى مبدئي] اقتباس ثانٍ يلخّص الأثر.",
+          quote: "[محتوى مبدئي] اقتباس ثانٍ يذكر نتيجة ملموسة.",
           who: "[محتوى مبدئي] الاسم، الصفة",
         },
       ],
     },
     {
-      key: "contact",
-      station: "نهاية الطريق",
-      label: "الوجهة",
-      type: "contact",
+      key: "arrival",
+      kicker: "الفصل الأخير",
+      word: "الوصول",
       scene: {
         id: "amman",
-        alt: "عمّان ليلًا: تلال مضاءة بآلاف النوافذ وطريق ذهبي يدخل المدينة",
+        alt: "عمّان ليلًا: تلال مضاءة بآلاف النوافذ والطريق الذهبي يدخل المدينة",
         focus: "50% 62%",
       },
-      body: ["[محتوى مبدئي] سطر ختامي قصير يدعو للتواصل."],
-      whatsapp: {
-        label: "تواصل عبر واتساب",
-        number: "+962 7 0000 0000",
-        href: "https://wa.me/9627XXXXXXXX",
+      body: ["[محتوى مبدئي] سطر ختامي: الطريق لا ينتهي في عمّان — يبدأ منها من جديد."],
+      contact: {
+        whatsapp: {
+          label: "تواصل عبر واتساب",
+          number: "+962 7 0000 0000",
+          href: "https://wa.me/9627XXXXXXXX",
+        },
+        location: "عمّان، الأردن",
+        closing: "[محتوى مبدئي] جملة استقبال قصيرة لمن وصل إلى نهاية الرحلة.",
       },
-      location: "[محتوى مبدئي] عمّان، الأردن",
-      closing: "[محتوى مبدئي] الطريق لا ينتهي — إنه يبدأ من جديد.",
     },
   ],
 };
 
 // -----------------------------------------------------------------------------
-// EN — English (LTR)
+// EN — English (LTR, supportive voice)
 // -----------------------------------------------------------------------------
 const en: LocaleContent = {
   meta: {
-    title: "Ahmad Qattan — The Road",
+    title: "Ahmad Qattan — The Journey",
     description:
-      "[Placeholder] The personal site of Ahmad Qattan, writer & trainer — a journey down the road from gold to white, where every milestone is a chapter of his story.",
-    ogTitle: "Ahmad Qattan — The Road",
+      "[Placeholder] A journey down a glowing road through the Jordanian desert night — the life of Ahmad Qattan, writer & trainer, chapter by chapter until Amman.",
+    ogTitle: "Ahmad Qattan — The Journey",
     ogDescription:
-      "[Placeholder] Writer & trainer, the thread behind several ventures. Travel the road and discover the story.",
+      "[Placeholder] Writer & trainer. One road crossing the night toward Amman — walk it.",
     siteName: "Ahmad Qattan",
-    keywords: ["Ahmad Qattan", "writer", "trainer", "Think Equality", "content", "training"],
+    keywords: ["Ahmad Qattan", "writer", "trainer", "Think Equality", "Amman", "Jordan"],
   },
   ui: {
     skip: "Skip to content",
     toggleTo: "ع",
     toggleAria: "Switch to Arabic",
-    progressAria: "Reading progress along the road",
-    explore: "Explore the story",
-    scrollHint: "Travel the road",
+    progressAria: "The journey along the road",
+    scrollHint: "Walk the road",
     openExternal: "(opens in a new tab)",
-    readMore: "Read more",
-    readLess: "Show less",
-    portalEntering: "Entering Think Equality…",
-    portalClose: "Close",
-    portalHint: "Press to enter Think Equality",
-    footnote: "[Placeholder] All copy is placeholder and editable.",
+    contactPill: "Contact",
+    portalEntering: "Crossing into Think Equality…",
+    footnote: "[Placeholder] All copy is placeholder awaiting Ahmad's real words.",
   },
   hero: {
     eyebrow: "Writer & Trainer",
     name: "Ahmad Qattan",
-    wildcard: "the thread that ties it all together",
-    intro:
-      "[Placeholder] A short introductory line about Ahmad: who he is, and what unites everything he does. A few words here set up the journey down the road.",
-    cta: "Explore the story",
-    portrait: { src: "/ahmad-qattan.jpg", alt: "Ahmad Qattan" },
+    positioning:
+      "[Placeholder] One plain sentence: who Ahmad helps, and what changes for them after they meet him.",
+    cta: "Begin the journey",
     scene: {
       id: "traveler",
-      alt: "A traveler standing on a glowing desert road at night, gazing at the horizon",
+      alt: "A traveler standing on a glowing golden road in the desert night, facing the horizon light",
       focus: "42% 62%",
     },
   },
-  stops: [
+  chapters: [
     {
-      key: "about",
-      station: "Starting point",
-      label: "Who is Ahmad Qattan",
+      key: "beginning",
+      kicker: "Chapter One",
+      word: "The Beginning",
       scene: {
         id: "childhood",
-        alt: "A child walking along a glowing night road with a kite in the sky",
+        alt: "A child walking a glowing night road, a lit paper kite in the sky",
         focus: "42% 65%",
       },
       body: [
-        "[Placeholder] A short paragraph introducing Ahmad Qattan: his background, and what makes his voice distinct as a writer and trainer.",
-        "[Placeholder] A second paragraph on the common thread that links his ventures, and how it shows up in everything he makes.",
+        "[Placeholder] Where the road began: the first home, the first light, the first written line that changed something inside him.",
+        "[Placeholder] A line that foreshadows what this beginning will become.",
       ],
     },
     {
-      key: "story",
-      station: "The road",
-      label: "The journey",
+      key: "road",
+      kicker: "Chapter Two",
+      word: "The Road",
       scene: {
         id: "station",
-        alt: "A small lit tea stand at the roadside in the desert night",
+        alt: "A small lit tea rest on the shoulder of the road at night",
         focus: "35% 58%",
       },
       body: [
-        "[Placeholder] A brief narrative of the journey: the beginning, the turning point, and where the road is today.",
-        "[Placeholder] One more line connecting past to present and setting up what he does now.",
+        "[Placeholder] The walking years: the stations he stopped at, and what each rest taught him.",
+        "[Placeholder] The turning point that made writing a decision, not an accident.",
       ],
     },
     {
-      key: "services",
-      station: "Craft",
-      label: "What he does",
-      type: "services",
+      key: "craft",
+      kicker: "Chapter Three",
+      word: "The Craft",
       scene: {
         id: "pen",
-        alt: "A monument shaped like a pen nib beside the road, pages flying into the night sky",
+        alt: "A stone monument shaped like a pen nib beside the road, lit pages flying from it",
         focus: "40% 58%",
       },
-      items: [
-        {
-          name: "[Placeholder] Writing",
-          desc: "[Placeholder] A short description of the writing service.",
-          icon: "pen",
-        },
-        {
-          name: "[Placeholder] Training",
-          desc: "[Placeholder] A short description of workshops and training.",
-          icon: "users",
-        },
-        {
-          name: "[Placeholder] Content",
-          desc: "[Placeholder] A short description of content production.",
-          icon: "layers",
-        },
-        {
-          name: "[Placeholder] Initiatives",
-          desc: "[Placeholder] A short description of initiatives and projects.",
-          icon: "spark",
-        },
+      body: ["[Placeholder] One line on his relationship with the word: why he writes, and for whom."],
+      craft: [
+        { name: "Writing", desc: "[Placeholder] One-line description." },
+        { name: "Training", desc: "[Placeholder] One-line description." },
+        { name: "Content", desc: "[Placeholder] One-line description." },
+        { name: "Initiatives", desc: "[Placeholder] One-line description." },
       ],
     },
     {
-      key: "values",
-      station: "Compass",
-      label: "What he believes",
-      type: "chips",
+      key: "voice",
+      kicker: "Chapter Four",
+      word: "The Voice",
       scene: {
         id: "training",
         alt: "A small open-air stage lit at night, an audience seated under the stars near the road",
         focus: "55% 60%",
       },
-      items: [
-        "[Placeholder] Value one",
-        "[Placeholder] Value two",
-        "[Placeholder] Value three",
-        "[Placeholder] Value four",
-        "[Placeholder] Value five",
-      ],
-    },
-    {
-      key: "ventures",
-      station: "Ventures",
-      label: "Behind it all",
-      type: "chips",
-      scene: {
-        id: "dawn",
-        alt: "A winding golden road crossing the whole desert toward a low sun",
-        focus: "55% 50%",
-      },
       body: [
-        "[Placeholder] A paragraph that establishes the wildcard: Ahmad is the thread behind several ventures. One of them is a fork in the road.",
-      ],
-      items: [
-        "[Placeholder] Venture one",
-        "[Placeholder] Venture two",
-        { t: "Think Equality", feature: true },
-        "[Placeholder] Venture four",
+        "[Placeholder] The first time he stood before people: what he believes, and what he tries to awaken in those he trains.",
+        "[Placeholder] A line on the values he will not trade.",
       ],
     },
     {
-      key: "think-equality",
-      station: "A fork in the road",
-      label: "Think Equality",
-      type: "gateway",
+      key: "crossing",
+      kicker: "Chapter Five",
+      word: "The Crossing",
       scene: {
         id: "fork-arch",
-        alt: "A stone arch at a fork in the road: one side flooded with dawn light, the other in night",
+        alt: "An ancient stone arch at a fork: through it dawn begins, around it the night continues",
         focus: "45% 52%",
       },
-      name: "Think Equality",
-      tag: "[Placeholder] Short tag for the gateway",
-      body: "[Placeholder] A line inviting the visitor to cross the threshold into the separate Think Equality website.",
-      cta: "Enter Think Equality",
-      url: "#",
+      scene2: {
+        id: "dawn",
+        alt: "The golden road crossing the whole desert toward a low sun — the world after the crossing",
+        focus: "55% 50%",
+      },
+      gateway: {
+        name: "Think Equality",
+        tag: "[Placeholder] What Think Equality is, in one line.",
+        body: "[Placeholder] Not another website — it is what the journey created. A line inviting the visitor to cross.",
+        cta: "Cross the gate",
+        url: "#",
+      },
     },
     {
       key: "impact",
-      station: "Impact",
-      label: "By the numbers",
-      type: "stats",
+      kicker: "Chapter Six",
+      word: "The Trace",
       scene: {
         id: "impact",
-        alt: "Glowing milestone stones along a golden road stretching toward the night horizon",
+        alt: "Glowing milestone stones along the golden road stretching toward the horizon",
+        focus: "50% 50%",
+      },
+      scene2: {
+        id: "testimonials",
+        alt: "A small campfire, companions of the road seated around it under the stars",
         focus: "50% 50%",
       },
       stats: [
@@ -531,55 +405,43 @@ const en: LocaleContent = {
         { n: "00", l: "[Placeholder] Metric two" },
         { n: "00+", l: "[Placeholder] Metric three" },
       ],
-    },
-    {
-      key: "testimonials",
-      station: "Echoes",
-      label: "What they say",
-      type: "quotes",
-      scene: {
-        id: "testimonials",
-        alt: "A small campfire with people seated around it beside the golden road under the stars",
-        focus: "50% 50%",
-      },
-      items: [
+      voices: [
         {
-          quote: "[Placeholder] A short quote from someone who worked with Ahmad.",
+          quote: "[Placeholder] A real, outcome-specific quote from someone who worked with Ahmad.",
           who: "[Placeholder] Name, role",
         },
         {
-          quote: "[Placeholder] A second quote that captures the impact.",
+          quote: "[Placeholder] A second quote naming a tangible result.",
           who: "[Placeholder] Name, role",
         },
       ],
     },
     {
-      key: "contact",
-      station: "End of the road",
-      label: "Destination",
-      type: "contact",
+      key: "arrival",
+      kicker: "Final Chapter",
+      word: "The Arrival",
       scene: {
         id: "amman",
-        alt: "Amman at night: hills lit by thousands of windows and a golden road entering the city",
+        alt: "Amman at night: hills lit by thousands of windows, the golden road entering the city",
         focus: "50% 62%",
       },
-      body: ["[Placeholder] A short closing line inviting people to get in touch."],
-      whatsapp: {
-        label: "Message on WhatsApp",
-        number: "+962 7 0000 0000",
-        href: "https://wa.me/9627XXXXXXXX",
+      body: ["[Placeholder] A closing line: the road does not end in Amman — it begins again from her."],
+      contact: {
+        whatsapp: {
+          label: "Message on WhatsApp",
+          number: "+962 7 0000 0000",
+          href: "https://wa.me/9627XXXXXXXX",
+        },
+        location: "Amman, Jordan",
+        closing: "[Placeholder] A short welcome for whoever reached the end of the journey.",
       },
-      location: "[Placeholder] Amman, Jordan",
-      closing: "[Placeholder] The road doesn't end — it begins again.",
     },
   ],
 };
 
 export const content: Content = { ar, en };
 
-// Convenience: the gateway stop pulled out for the portal logic.
+/** The crossing chapter, pulled out for the portal logic. */
 export function getGateway(c: LocaleContent) {
-  return c.stops.find((s) => "type" in s && s.type === "gateway") as
-    | Extract<Stop, { type: "gateway" }>
-    | undefined;
+  return c.chapters.find((ch) => ch.gateway)?.gateway;
 }

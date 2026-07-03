@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -8,35 +8,39 @@ import { content } from "@/lib/content";
 import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { TALL_SCENES } from "./Scene";
-import { ArrowDown } from "./icons";
 
 gsap.registerPlugin(ScrollTrigger);
 
+/**
+ * The hero is a landmark, not a heading. The traveler painting fills the
+ * viewport; Ahmad's Arabic name stands monumental across it; one plain
+ * positioning line answers who/what/for-whom within the first five seconds.
+ * The road begins directly below.
+ */
 export function Hero() {
   const { locale } = useLocale();
   const reduced = useReducedMotion();
   const hero = content[locale].hero;
   const ui = content[locale].ui;
   const root = useRef<HTMLElement>(null);
-  const [imgError, setImgError] = useState(false);
 
   useGSAP(
     () => {
       if (reduced) return;
 
-      // One orchestrated page-load sequence (~1s): brand + hero rise in.
+      // One quiet arrival: eyebrow → name → line → cta, like a title card.
       const items = gsap.utils.toArray<HTMLElement>("[data-rise]");
-      gsap.set(items, { autoAlpha: 0, y: 28 });
+      gsap.set(items, { autoAlpha: 0, y: 26 });
       gsap.to(items, {
         autoAlpha: 1,
         y: 0,
-        duration: 0.9,
+        duration: 1.1,
         ease: "power3.out",
-        stagger: 0.12,
-        delay: 0.15,
+        stagger: 0.14,
+        delay: 0.2,
       });
 
-      // Restrained parallax — the scene painting drifts as you leave the hero.
+      // The painting drifts as you leave — the world moves, not the text.
       const scene = root.current?.querySelector(".hero__scene img");
       if (scene) {
         gsap.to(scene, {
@@ -54,18 +58,17 @@ export function Hero() {
     { scope: root, dependencies: [locale, reduced] },
   );
 
-  const explore = () => {
-    const target = document.getElementById("road");
-    target?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  const begin = () => {
+    document
+      .getElementById("road")
+      ?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
   };
 
   return (
     <header className="hero" ref={root}>
-      {/* Full-bleed night-road painting — the journey starts inside the art,
-          and its glowing road hands off to the drawn line below. */}
       <figure
         className="hero__scene"
-        aria-hidden
+        aria-hidden="true"
         data-scene-id={hero.scene.id}
         data-focus={hero.scene.focus ?? "50% 50%"}
         data-tall={TALL_SCENES.has(hero.scene.id) ? "1" : undefined}
@@ -89,25 +92,6 @@ export function Hero() {
         </picture>
       </figure>
 
-      <div className="hero__portrait" data-rise>
-        {imgError ? (
-          <div className="hero__monogram" role="img" aria-label={hero.portrait.alt}>
-            {hero.name.trim().charAt(0)}
-          </div>
-        ) : (
-          <img
-            className="hero__img"
-            src={hero.portrait.src}
-            alt={hero.portrait.alt}
-            width={600}
-            height={600}
-            loading="eager"
-            decoding="async"
-            onError={() => setImgError(true)}
-          />
-        )}
-      </div>
-
       <div className="hero__content">
         <p className="hero__eyebrow" data-rise>
           {hero.eyebrow}
@@ -115,22 +99,17 @@ export function Hero() {
         <h1 className="hero__name" data-rise>
           {hero.name}
         </h1>
-        <p className="hero__wildcard" data-rise>
-          {hero.wildcard}
-        </p>
-        <p className="hero__intro" data-rise>
-          {hero.intro}
+        <p className="hero__positioning" data-rise>
+          {hero.positioning}
         </p>
         <div className="hero__actions" data-rise>
-          <button type="button" className="cta group" onClick={explore}>
-            {hero.cta}
-            <span className="cta__arrow" aria-hidden>
-              <ArrowDown />
-            </span>
+          <button type="button" className="btn btn--primary" onClick={begin}>
+            <span className="btn__label">{hero.cta}</span>
+            <span className="btn__line" aria-hidden="true" />
           </button>
-          <span className="hero__hint">
+          <span className="hero__hint" aria-hidden="true">
             {ui.scrollHint}
-            <ArrowDown className="h-4 w-4" />
+            <span className="hero__hint-line" />
           </span>
         </div>
       </div>

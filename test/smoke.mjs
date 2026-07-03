@@ -1,11 +1,12 @@
-// Optional headless smoke test for the acceptance criteria (§4 no-overlap,
-// no h-overflow, road draws, locale/RTL toggle, portal plays).
+// Headless smoke test for THE JOURNEY acceptance criteria:
+// no horizontal overflow, the road draws, 7 chapter waypoints anchor the line,
+// locale/RTL toggle works, the crossing portal plays + reverses.
 //
 //   1) npm run build && npm run preview     # serves ./out on :3000
-//   2) npm i -D playwright && npx playwright install chromium
+//   2) npm i -D playwright  (Chromium via PW_EXECUTABLE if preinstalled)
 //   3) BASE_URL=http://localhost:3000 node test/smoke.mjs
 //
-// Env overrides: BASE_URL, PW_EXECUTABLE (custom Chromium path).
+// Env overrides: BASE_URL, PW_EXECUTABLE, SHOTS.
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 const OUT = process.env.SHOTS || "/tmp/shots";
@@ -15,53 +16,11 @@ try {
   ({ chromium } = await import("playwright"));
 } catch {
   console.log("playwright not installed — skipping smoke test.");
-  console.log("  npm i -D playwright && npx playwright install chromium");
   process.exit(0);
 }
 
 import { mkdirSync } from "fs";
 mkdirSync(OUT, { recursive: true });
-
-const intersects = (a, b) => {
-  const p = 0.5;
-  return !(a.x + a.w - p <= b.x || b.x + b.w - p <= a.x || a.y + a.h - p <= b.y || b.y + b.h - p <= a.y);
-};
-const rects = (page, sel) =>
-  page.$$eval(sel, (els) =>
-    els.map((el) => {
-      const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, w: r.width, h: r.height };
-    }),
-  );
-
-async function overlapReport(page, label) {
-  const markers = await rects(page, ".marker");
-  const cards = await rects(page, ".stop__card, .gateway");
-  let mc = 0;
-  for (const m of markers) for (const c of cards) if (intersects(m, c)) mc++;
-  let mm = 0;
-  for (let i = 0; i < markers.length; i++)
-    for (let j = i + 1; j < markers.length; j++) if (intersects(markers[i], markers[j])) mm++;
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  );
-  console.log(
-    `[${label}] markers=${markers.length} cards=${cards.length} | marker×card=${mc} | marker×marker=${mm} | h-overflow=${overflow}px`,
-  );
-  return { mc, mm, overflow, markers: markers.length };
-}
-
-async function scrollThrough(page) {
-  await page.evaluate(async () => {
-    const h = document.documentElement.scrollHeight;
-    for (let y = 0; y <= h; y += Math.round(window.innerHeight * 0.6)) {
-      window.scrollTo(0, y);
-      await new Promise((r) => setTimeout(r, 120));
-    }
-    window.scrollTo(0, 0);
-    await new Promise((r) => setTimeout(r, 200));
-  });
-}
 
 const errors = [];
 const launchOpts = process.env.PW_EXECUTABLE ? { executablePath: process.env.PW_EXECUTABLE } : {};
@@ -76,34 +35,69 @@ async function newPage(opts) {
   return { ctx, page };
 }
 
-// 1) Desktop layout/overlap (reduced motion = stable final layout)
+async function travel(page) {
+  await page.evaluate(async () => {
+    const h = document.documentElement.scrollHeight;
+    for (let y = 0; y <= h; y += Math.round(window.innerHeight * 0.5)) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 140));
+    }
+    window.scrollTo(0, 0);
+    await new Promise((r) => setTimeout(r, 200));
+  });
+}
+
+async function report(page, label) {
+  const waypoints = await page.$$eval("[data-marker]", (els) => els.length);
+  const chapters = await page.$$eval("[data-chapter]", (els) => els.length);
+  const scenes = await page.$$eval(".scene img", (els) =>
+    els.filter((i) => i.naturalWidth > 0).length,
+  );
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  console.log(
+    `[${label}] chapters=${chapters} waypoints=${waypoints} scenes-loaded=${scenes} | h-overflow=${overflow}px`,
+  );
+  return { waypoints, chapters, overflow };
+}
+
+// 1) Desktop layout (reduced motion = stable final layout, intro skipped)
 {
-  const { ctx, page } = await newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "reduce", label: "desktop" });
+  const { ctx, page } = await newPage({
+    viewport: { width: 1280, height: 900 },
+    reducedMotion: "reduce",
+    label: "desktop",
+  });
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
   await page.waitForTimeout(500);
-  await scrollThrough(page);
-  const r = await overlapReport(page, "desktop");
-  if (r.mc || r.mm || r.overflow > 1 || r.markers < 8) fail = true;
-  await page.screenshot({ path: `${OUT}/desktop-mid.png` });
+  await travel(page);
+  const r = await report(page, "desktop");
+  if (r.overflow > 1 || r.chapters !== 7 || r.waypoints < 7) fail = true;
+  await page.screenshot({ path: `${OUT}/desktop.png` });
   await ctx.close();
 }
 
-// 2) Mobile single-rail layout/overlap
+// 2) Mobile
 {
-  const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce", label: "mobile" });
+  const { ctx, page } = await newPage({
+    viewport: { width: 390, height: 844 },
+    reducedMotion: "reduce",
+    label: "mobile",
+  });
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
   await page.waitForTimeout(500);
-  await scrollThrough(page);
-  const r = await overlapReport(page, "mobile");
-  if (r.mc || r.mm || r.overflow > 1) fail = true;
+  await travel(page);
+  const r = await report(page, "mobile");
+  if (r.overflow > 1 || r.chapters !== 7) fail = true;
   await ctx.close();
 }
 
-// 3) Motion: road draws, traveler, locale toggle, portal plays + reverses
+// 3) Motion: intro plays, road draws, traveler exists, locale toggle, portal
 {
   const { ctx, page } = await newPage({ viewport: { width: 1280, height: 900 }, label: "motion" });
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(3400); // let the opening sequence finish
   const d = await page.$eval(".road__path", (p) => p.getAttribute("d") || "");
   const traveler = (await page.$(".traveler")) != null;
   console.log(`[motion] path=${d.length} chars | traveler=${traveler}`);
@@ -118,9 +112,11 @@ async function newPage(opts) {
   await page.click(".locale-toggle");
   await page.waitForTimeout(500);
 
-  await page.evaluate(() => document.querySelector("[data-gateway-stop]")?.scrollIntoView({ block: "center" }));
-  await page.waitForTimeout(800);
-  await (await page.$(".gateway__btn")).click();
+  await page.evaluate(() =>
+    document.querySelector(".crossing")?.scrollIntoView({ block: "center" }),
+  );
+  await page.waitForTimeout(900);
+  await (await page.$(".btn--gate")).click();
   await page.waitForTimeout(450);
   const visible = await page.$eval(".portal", (el) => {
     const s = getComputedStyle(el);
@@ -128,12 +124,13 @@ async function newPage(opts) {
   });
   if (!visible) fail = true;
   await page.screenshot({ path: `${OUT}/portal.png` });
-  await page.waitForTimeout(2200);
+  await page.waitForTimeout(2400);
   const hidden = await page.$eval(".portal", (el) => {
     const s = getComputedStyle(el);
     return s.visibility === "hidden" || parseFloat(s.opacity) < 0.05;
   });
   console.log(`[motion] portal visible=${visible} reversed=${hidden}`);
+  if (!hidden) fail = true;
   await ctx.close();
 }
 

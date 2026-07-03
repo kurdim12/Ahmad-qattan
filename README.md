@@ -68,23 +68,26 @@ plain static assets — no server runtime.
 
 ```
 app/
-  layout.tsx        Root layout: next/font, SEO metadata, hreflang, Person JSON-LD
+  layout.tsx        Root layout: next/font (Reem Kufi / IBM Plex Arabic /
+                    Fraunces / Inter), SEO metadata, hreflang, Person JSON-LD
   page.tsx          Renders <App/>
-  globals.css       Design tokens + the overlap-fix timeline + all interaction CSS
+  globals.css       The design language: typography-first, no cards, ink motion
   icon.svg          Favicon
 components/
-  App.tsx           Client root: LocaleProvider + chrome + locale crossfade
-  Hero.tsx          Hero inside the traveler painting + page-load sequence
-  RoadJourney.tsx   THE ENGINE — builds the path, draws on scroll, rides the
-                    traveler, lights markers, scene parallax, gateway approach, Lenis
-  Scene.tsx         A night-road painting, feathered into the sky (CSS mask)
-  Stop.tsx          Renders a chapter: scene → marker on the line → card
-  GatewayStop.tsx   Think Equality gateway + the portal sequence (iris / curtain)
-  Marker.tsx        Number-in-disc marker (and the ✦ gateway marker)
-  Traveler.tsx      The glowing dot
+  App.tsx           Client root: chrome + atmosphere layers (starfield, grain,
+                    warmth veil) + locale crossfade
+  Hero.tsx          The landmark: monumental name over the traveler painting
+  RoadJourney.tsx   THE ENGINE — one road tracing the painted roads, ink text
+                    reveals (SplitText), carve reveals, warmth after the arch,
+                    comet traveler synced to the eyeline, Lenis
+  Chapter.tsx       A chapter: painting → waypoint → carved word → ink text
+                    (+ craft list / figures / voices / crossing / arrival)
+  Scene.tsx         A painting, feathered into the sky + its road maps
+  Starfield.tsx     Canvas night sky: twinkling stars + drifting dust
+  Intro.tsx         The opening: the road writes itself across the dark
+  ContactPill.tsx   The quiet escape hatch (persistent contact)
+  Traveler.tsx      The light on the road
   LocaleToggle.tsx  AR/EN corner toggle
-  ScrollProgress.tsx Slim progress bar under the top bar
-  icons.tsx         Service / arrow / portal glyphs
 lib/
   content.ts        ★ SINGLE SOURCE OF TRUTH for all copy (AR + EN)
   config.ts         Portal variant + timing knobs

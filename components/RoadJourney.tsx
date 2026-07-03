@@ -3,18 +3,17 @@
 import { useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitText } from "gsap/SplitText";
 import { useGSAP } from "@gsap/react";
 import Lenis from "lenis";
 import { content } from "@/lib/content";
 import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
-import { formatStopNumber } from "@/lib/numerals";
-import { Stop } from "./Stop";
-import { GatewayStop } from "./GatewayStop";
+import { Chapter } from "./Chapter";
 import { SCENE_ROADS, SCENE_ROADS_TALL } from "./Scene";
 import { Traveler } from "./Traveler";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
 interface Anchor {
   x: number;
@@ -26,7 +25,7 @@ interface Anchor {
 /** Frame ratios: wide originals and portrait (tall) phone variants. */
 const IMG_RATIO = 1680 / 944;
 const IMG_RATIO_TALL = 1024 / 1536;
-/** .scene__img / .hero__scene img are 112% tall (parallax headroom). */
+/** Scene <img> elements are 112% tall (parallax headroom). */
 const IMG_H_FACTOR = 1.12;
 
 function parseFocus(s: string | undefined): [number, number] {
@@ -34,12 +33,7 @@ function parseFocus(s: string | undefined): [number, number] {
   return m ? [parseFloat(m[1]) / 100, parseFloat(m[2]) / 100] : [0.5, 0.5];
 }
 
-/**
- * Map a point given as a fraction of the FULL painting to coordinates inside
- * the (object-fit: cover, object-position: focus) crop shown by a figure —
- * i.e. exactly where that spot of the artwork is rendered on screen.
- * Returned coords are relative to the figure's top-left.
- */
+/** Map a full-painting fraction to on-screen coords inside the live crop. */
 function scenePoint(
   fig: DOMRect,
   fx: number,
@@ -61,6 +55,14 @@ function scenePoint(
   return { x: ox + fx * iw, y: oy + fy * ih };
 }
 
+/**
+ * THE ROAD — the main character. One line crossing the whole journey:
+ * it traces the painted road inside every painting (dissolving there, so the
+ * artwork carries it), re-emerges where the paint leaves the frame, passes
+ * beneath the chapter words, and ends inside Amman. The traveler is a comet
+ * of light locked to the reader's eyeline; a trailing ember follows it.
+ * After the arch, the whole night warms (--warmth 0→1 on the root).
+ */
 export function RoadJourney() {
   const { locale } = useLocale();
   const reduced = useReducedMotion();
@@ -72,6 +74,7 @@ export function RoadJourney() {
   const hazeRef = useRef<SVGPathElement>(null);
   const leadRef = useRef<SVGPathElement>(null);
   const travelerRef = useRef<HTMLDivElement>(null);
+  const trailRef = useRef<HTMLDivElement>(null);
   const maskBaseRef = useRef<SVGRectElement>(null);
   const maskScenesRef = useRef<SVGGElement>(null);
   const cache = useRef<{
@@ -99,7 +102,7 @@ export function RoadJourney() {
     { dependencies: [reduced] },
   );
 
-  // --- The road engine: build geometry, draw on scroll, ride the traveler.
+  // --- The road engine.
   useGSAP(
     () => {
       const road = roadRef.current;
@@ -109,20 +112,13 @@ export function RoadJourney() {
       const haze = hazeRef.current;
       const lead = leadRef.current;
       const traveler = travelerRef.current;
-      if (!road || !svg || !path || !glow || !haze || !lead || !traveler) return;
+      const trail = trailRef.current;
+      if (!road || !svg || !path || !glow || !haze || !lead || !traveler || !trail) return;
 
       const strokes = [path, glow, haze];
       const markerEls = () =>
         Array.from(road.querySelectorAll<HTMLElement>("[data-marker]"));
 
-      /** Build the SVG path as ONE road with the paintings: it arrives at each
-       *  scene's painted-road horizon point, follows the painted road's bends
-       *  (SCENE_ROADS waypoints mapped through the live crop), and re-emerges
-       *  exactly where the painted road crosses the frame's bottom edge. An
-       *  SVG mask hides the stroke inside the paintings — there the PAINTED
-       *  road carries the journey and only the traveler dot rides across it.
-       *  Markers are shifted onto the road (each scene's exit x), so line →
-       *  number → card thread as one. */
       const buildPath = () => {
         const markers = markerEls();
         if (markers.length === 0) return;
@@ -133,15 +129,13 @@ export function RoadJourney() {
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
         const cx = W / 2;
-        const ampSmall = isMobile ? 20 : 80; // weave for scene-less stretches
+        const ampSmall = isMobile ? 20 : 80;
         const clampX = (x: number) => Math.max(28, Math.min(W - 28, x));
 
         const pts: { x: number; y: number }[] = [];
         const anchors: Anchor[] = [];
         const sceneRects: { top: number; h: number }[] = [];
 
-        // Wide painting on desktop, portrait painting on phones — each has its
-        // own frame ratio and its own traced road map.
         const roadOf = (el: HTMLElement) => {
           const id = el.dataset.sceneId as keyof typeof SCENE_ROADS | undefined;
           if (!id) return null;
@@ -152,8 +146,7 @@ export function RoadJourney() {
           };
         };
 
-        // Start where the HERO painting's road crosses its bottom edge — the
-        // drawn line literally continues the picture above.
+        // The line begins where the hero painting's road crosses its bottom edge.
         let startX = cx;
         const heroFig = document.querySelector<HTMLElement>(".hero__scene");
         const heroRoad = heroFig && roadOf(heroFig);
@@ -168,7 +161,6 @@ export function RoadJourney() {
         }
         pts.push({ x: startX, y: 0 });
 
-        // Walk scenes + markers in document order.
         const els = Array.from(
           road.querySelectorAll<HTMLElement>("[data-scene], [data-marker]"),
         );
@@ -187,10 +179,8 @@ export function RoadJourney() {
               const [px, py] = parseFocus(el.dataset.focus);
               const eP = scenePoint(fr, meta.entry[0], meta.entry[1], px, py, ratio);
               const entryX = clampX(fx0 + eP.x);
-              // Pre-entry node above the painting: the sideways swing toward
-              // the horizon point happens across the tall card zone, so the
-              // line always ENTERS the picture near-vertically (no flat
-              // full-width streaks in the sky).
+              // Enter every painting near-vertically: the sideways swing
+              // happens over the text zone above it.
               const prevY = pts[pts.length - 1].y;
               const preY = fy0 - (isMobile ? 80 : 140);
               if (preY > prevY + 60) pts.push({ x: entryX, y: preY });
@@ -207,8 +197,6 @@ export function RoadJourney() {
             }
             lastWasMarker = false;
           } else {
-            // Marker: park it where the painted road left the frame (or keep
-            // it centred on scene-less stops), THEN measure it.
             el.style.transform =
               pendingExitX != null
                 ? `translateX(${(pendingExitX - cx).toFixed(1)}px)`
@@ -217,7 +205,6 @@ export function RoadJourney() {
             const mx = r.left - roadRect.left + r.width / 2;
             const my = r.top - roadRect.top + r.height / 2;
             if (lastWasMarker) {
-              // Two markers with no painting between them: gentle weave.
               const prev = pts[pts.length - 1];
               pts.push({ x: cx + bulgeSide * ampSmall, y: (prev.y + my) / 2 });
               bulgeSide = -bulgeSide;
@@ -233,10 +220,8 @@ export function RoadJourney() {
             lastWasMarker = true;
           }
         }
-        // NOTE: no trailing point — the path FINISHES exactly on the last
-        // marker so the line + traveler land on the final number.
+        // The path FINISHES on the last node — inside Amman.
 
-        // Smooth through nodes with vertical tangents (cp shares x with node).
         let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
         for (let i = 1; i < pts.length; i++) {
           const p0 = pts[i - 1];
@@ -250,9 +235,7 @@ export function RoadJourney() {
         lead.setAttribute("d", d);
 
         const total = path.getTotalLength();
-
-        // Sample once to map each anchor (and the gateway) to a path length.
-        const SAMPLES = 600;
+        const SAMPLES = 700;
         const sampled: { l: number; y: number }[] = [];
         for (let i = 0; i <= SAMPLES; i++) {
           const l = (i / SAMPLES) * total;
@@ -270,14 +253,12 @@ export function RoadJourney() {
           p.style.strokeDashoffset = `${total}`;
         });
 
-        // Lead glow: a bright segment ending at the gateway, faded in on approach.
         const seg = isMobile ? 90 : 150;
         lead.style.strokeDasharray = `${seg} ${total}`;
         lead.style.strokeDashoffset = `${seg - gatewayLen}`;
         lead.style.opacity = "0";
 
-        // Mask: hide the stroke inside each painting (soft dissolve at the
-        // edges) — there the PAINTED road carries the journey.
+        // Mask: inside each painting the stroke dissolves — the paint carries it.
         const maskBase = maskBaseRef.current;
         const maskScenes = maskScenesRef.current;
         if (maskBase && maskScenes) {
@@ -305,7 +286,6 @@ export function RoadJourney() {
         };
       };
 
-      /** Path length at a given page-y (both monotonic along the road). */
       const lengthAtY = (y: number) => {
         const c = cache.current;
         if (!c) return 0;
@@ -323,7 +303,12 @@ export function RoadJourney() {
         return s[lo].l + t * (s[hi].l - s[lo].l);
       };
 
-      /** Apply a drawn length: reveal stroke, ride the traveler, light markers. */
+      // Trailing ember follows the traveler with an eased lag — a comet.
+      const trailTo = {
+        x: gsap.quickTo(trail, "x", { duration: 0.5, ease: "power2.out" }),
+        y: gsap.quickTo(trail, "y", { duration: 0.5, ease: "power2.out" }),
+      };
+
       const applyDraw = (drawn: number) => {
         const c = cache.current;
         if (!c) return;
@@ -332,22 +317,31 @@ export function RoadJourney() {
         });
         const pt = path.getPointAtLength(drawn);
         gsap.set(traveler, { x: pt.x, y: pt.y, xPercent: -50, yPercent: -50 });
+        trailTo.x(pt.x);
+        trailTo.y(pt.y);
+        // The traveler dissolves into Amman at the very end of the road.
+        const endFade = gsap.utils.clamp(
+          0,
+          1,
+          (c.total - drawn) / Math.max(1, c.total * 0.015),
+        );
+        traveler.style.opacity = String(endFade);
+        trail.style.opacity = String(endFade * 0.8);
         const markers = markerEls();
         c.anchors.forEach((a, i) => {
           markers[i]?.classList.toggle("is-active", drawn >= a.len - 1);
         });
       };
 
-      /** The sync rule: the draw head IS the middle of your screen. The dot is
-       *  always exactly where you're looking; markers light as they cross it. */
+      /** The draw head IS the middle of the screen — the light is always
+       *  exactly where the reader is looking. */
       const drawAtViewport = () => {
         const c = cache.current;
         if (!c) return;
-        const focalY = window.scrollY + window.innerHeight * 0.5 - c.roadTop;
-        applyDraw(lengthAtY(focalY));
+        applyDraw(lengthAtY(window.scrollY + window.innerHeight * 0.5 - c.roadTop));
       };
 
-      // ---- Reduced motion: show the finished road, everything lit, no scrub. ----
+      // ---- Reduced motion: complete experience, no scrub. ----
       if (reduced) {
         buildPath();
         const c = cache.current;
@@ -355,34 +349,67 @@ export function RoadJourney() {
           strokes.forEach((p) => {
             p.style.strokeDashoffset = "0";
           });
-          const end = path.getPointAtLength(c.total);
-          gsap.set(traveler, { x: end.x, y: end.y, xPercent: -50, yPercent: -50, autoAlpha: 0 });
+          gsap.set([traveler, trail], { autoAlpha: 0 });
           markerEls().forEach((m) => m.classList.add("is-active"));
+          document.documentElement.style.setProperty("--warmth", "1");
         }
         return;
       }
 
       document.documentElement.classList.add("has-motion");
 
-      // Card reveals (calm rise + fade).
-      gsap.utils.toArray<HTMLElement>(".reveal").forEach((el) => {
+      // ---- INK: every text block arrives like lines being written. ----
+      const splits: SplitText[] = [];
+      gsap.utils.toArray<HTMLElement>("[data-ink]").forEach((el) => {
+        const split = new SplitText(el, {
+          type: "lines",
+          linesClass: "ink-line",
+          mask: "lines",
+        });
+        splits.push(split);
         gsap.fromTo(
-          el,
-          { autoAlpha: 0, y: 40 },
+          split.lines,
+          { yPercent: 115 },
           {
-            autoAlpha: 1,
-            y: 0,
+            yPercent: 0,
             duration: 0.9,
             ease: "power3.out",
-            scrollTrigger: { trigger: el, start: "top 85%", once: true },
+            stagger: 0.09,
+            scrollTrigger: { trigger: el, start: "top 86%", once: true },
           },
         );
       });
 
-      // Scenes: a gentle parallax drift so the paintings feel like landscapes
-      // passing by. NO opacity/visibility animation here — hidden elements
-      // block lazy image loading, and a missed one-shot trigger would leave a
-      // chapter black. The paintings' masked feather is their reveal.
+      // ---- CARVE: chapter words surface like inscriptions. ----
+      gsap.utils.toArray<HTMLElement>("[data-carve]").forEach((el) => {
+        gsap.fromTo(
+          el,
+          { autoAlpha: 0, letterSpacing: "0.08em" },
+          {
+            autoAlpha: 1,
+            letterSpacing: "0em",
+            duration: 1.4,
+            ease: "power2.out",
+            scrollTrigger: { trigger: el, start: "top 82%", once: true },
+          },
+        );
+      });
+
+      // ---- Written separators: hairlines draw themselves. ----
+      gsap.utils.toArray<HTMLElement>(".craft__item").forEach((el) => {
+        gsap.fromTo(
+          el,
+          { "--rule": "0%" },
+          {
+            "--rule": "100%",
+            duration: 1.1,
+            ease: "power2.inOut",
+            scrollTrigger: { trigger: el, start: "top 88%", once: true },
+          },
+        );
+      });
+
+      // ---- Scenes: parallax drift only (no opacity games — lazy-load safe). ----
       gsap.utils.toArray<HTMLElement>("[data-scene]").forEach((fig) => {
         const img = fig.querySelector("img");
         if (img) {
@@ -403,27 +430,7 @@ export function RoadJourney() {
         }
       });
 
-      // Gateway reveal — weightier: scale + settle (brief §6A).
-      const gatewayEl = road.querySelector<HTMLElement>("[data-gateway-stop]");
-      const gatewayCard = road.querySelector<HTMLElement>(".reveal-gateway");
-      if (gatewayCard && gatewayEl) {
-        gsap.fromTo(
-          gatewayCard,
-          { autoAlpha: 0, scale: 0.82, y: 30 },
-          {
-            autoAlpha: 1,
-            scale: 1,
-            y: 0,
-            duration: 1.1,
-            ease: "power3.out",
-            scrollTrigger: { trigger: gatewayEl, start: "top 80%", once: true },
-          },
-        );
-      }
-
-      // Main draw: active for the road's whole time on screen; the drawn head
-      // is computed from the viewport's focal line (see drawAtViewport), so
-      // line, paintings and text stay in lockstep with the reader.
+      // ---- Main draw, synced to the eyeline. ----
       ScrollTrigger.create({
         trigger: road,
         start: "top bottom",
@@ -437,23 +444,58 @@ export function RoadJourney() {
         onUpdate: drawAtViewport,
       });
 
-      // Gateway approach: siblings recede, lead glow brightens, ✦ pulses (tent curve).
-      if (gatewayEl) {
+      // ---- THE CROSSING: past the arch, night turns to warmth. ----
+      const crossing = road.querySelector<HTMLElement>(".chapter--crossing");
+      if (crossing) {
         ScrollTrigger.create({
-          trigger: gatewayEl,
+          trigger: crossing,
+          start: "center center",
+          endTrigger: road,
+          end: "bottom bottom",
+          scrub: true,
+          onUpdate: (self) => {
+            document.documentElement.style.setProperty(
+              "--warmth",
+              (self.progress * 0.9 + (self.progress > 0 ? 0.1 : 0)).toFixed(3),
+            );
+          },
+        });
+        // Lead glow brightens on approach to the arch.
+        ScrollTrigger.create({
+          trigger: crossing,
           start: "top 85%",
-          end: "bottom 15%",
+          end: "center 30%",
           scrub: true,
           onUpdate: (self) => {
             const tent = 1 - Math.abs(2 * self.progress - 1);
-            road.style.setProperty("--approach", tent.toFixed(3));
-            lead.style.opacity = String(tent);
-            lead.style.strokeWidth = String(3 + tent * 6);
+            lead.style.opacity = String(tent * 0.9);
+            lead.style.strokeWidth = String(3 + tent * 5);
           },
         });
       }
 
-      // Initial geometry + traveler "drop in" at the start.
+      // ---- Figures count up when the road lights them (real numbers only). ----
+      gsap.utils.toArray<HTMLElement>(".figures__n").forEach((el) => {
+        const raw = el.textContent ?? "";
+        const western = raw.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+        const target = parseInt(western.replace(/\D/g, ""), 10);
+        if (!target || Number.isNaN(target)) return; // placeholders stay untouched
+        const suffix = /\+/.test(raw) ? "+" : "";
+        const eastern = /[٠-٩]/.test(raw);
+        const obj = { v: 0 };
+        gsap.to(obj, {
+          v: target,
+          duration: 1.6,
+          ease: "power2.out",
+          scrollTrigger: { trigger: el, start: "top 85%", once: true },
+          onUpdate: () => {
+            let s = String(Math.round(obj.v));
+            if (eastern) s = s.replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
+            el.textContent = s + suffix;
+          },
+        });
+      });
+
       buildPath();
       drawAtViewport();
       gsap.fromTo(
@@ -462,17 +504,16 @@ export function RoadJourney() {
         { autoAlpha: 1, scale: 1, duration: 0.7, delay: 0.4, ease: "back.out(2)" },
       );
 
-      // Re-measure after fonts settle (avoids layout-shift drift).
       if (document.fonts?.ready) {
         document.fonts.ready.then(() => ScrollTrigger.refresh());
       }
+
+      return () => splits.forEach((s) => s.revert());
     },
     { scope: roadRef, dependencies: [locale, reduced] },
   );
 
-  // ---- Render: stops mapped to Stop / GatewayStop with numbering.
-  const stops = content[locale].stops;
-  let n = 0;
+  const chapters = content[locale].chapters;
 
   return (
     <section
@@ -482,9 +523,6 @@ export function RoadJourney() {
       aria-label={content[locale].ui.progressAria}
     >
       <div className="road__channel" aria-hidden="true">
-        {/* Three stacked strokes fake a luminous road without SVG filters
-            (cheap on mobile): wide haze, mid glow, hot core. The lead path
-            keeps its blur — it only lights up near the gateway. */}
         <svg ref={svgRef} className="road__svg" preserveAspectRatio="none">
           <defs>
             <linearGradient id="roadGrad" x1="0" y1="0" x2="0" y2="1">
@@ -495,8 +533,6 @@ export function RoadJourney() {
             <filter id="roadGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3.5" />
             </filter>
-            {/* Inside a painting the stroke dissolves (luminance mask) and the
-                PAINTED road takes over — only the traveler dot crosses the art. */}
             <linearGradient id="sceneHide" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#fff" />
               <stop offset="0.14" stopColor="#000" />
@@ -515,24 +551,15 @@ export function RoadJourney() {
             <path ref={leadRef} className="road__lead" stroke="#ffe9b0" fill="none" filter="url(#roadGlow)" />
           </g>
         </svg>
+        <div ref={trailRef} className="traveler-trail" aria-hidden="true" />
         <Traveler ref={travelerRef} />
       </div>
 
-      <ol className="stops">
-        {stops.map((stop) => {
-          if ("type" in stop && stop.type === "gateway") {
-            return <GatewayStop key={stop.key} stop={stop} />;
-          }
-          n += 1;
-          return (
-            <Stop
-              key={stop.key}
-              stop={stop}
-              number={formatStopNumber(n, locale)}
-            />
-          );
-        })}
-      </ol>
+      <div className="chapters">
+        {chapters.map((ch) => (
+          <Chapter key={ch.key} chapter={ch} />
+        ))}
+      </div>
     </section>
   );
 }
