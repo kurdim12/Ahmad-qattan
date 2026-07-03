@@ -7,7 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { content } from "@/lib/content";
 import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
-import { TALL_SCENES } from "./Scene";
+import { SceneArt } from "./scenes";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -40,8 +40,8 @@ export function Hero() {
         delay: 0.2,
       });
 
-      // The painting drifts as you leave — the world moves, not the text.
-      const scene = root.current?.querySelector(".hero__scene img");
+      // The world drifts as you leave — the scene moves, not the text.
+      const scene = root.current?.querySelector(".hero__scene .scene__img");
       if (scene) {
         gsap.to(scene, {
           yPercent: 10,
@@ -66,30 +66,8 @@ export function Hero() {
 
   return (
     <header className="hero" ref={root}>
-      <figure
-        className="hero__scene"
-        aria-hidden="true"
-        data-scene-id={hero.scene.id}
-        data-focus={hero.scene.focus ?? "50% 50%"}
-        data-tall={TALL_SCENES.has(hero.scene.id) ? "1" : undefined}
-      >
-        <picture>
-          {TALL_SCENES.has(hero.scene.id) ? (
-            <source
-              media="(max-width: 767px)"
-              srcSet={`/assets/scenes/${hero.scene.id}-tall-sm.webp 640w, /assets/scenes/${hero.scene.id}-tall.webp 1024w`}
-            />
-          ) : null}
-          <img
-            src={`/assets/scenes/${hero.scene.id}.webp`}
-            srcSet={`/assets/scenes/${hero.scene.id}-sm.webp 800w, /assets/scenes/${hero.scene.id}.webp 1600w`}
-            sizes="100vw"
-            alt=""
-            loading="eager"
-            decoding="async"
-            style={{ objectPosition: hero.scene.focus ?? "center" }}
-          />
-        </picture>
+      <figure className="hero__scene" aria-hidden="true" data-scene-id={hero.scene.id}>
+        <SceneArt id={hero.scene.id} label="" />
       </figure>
 
       <div className="hero__content">
