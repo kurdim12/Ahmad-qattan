@@ -23,12 +23,14 @@ interface Anchor {
 }
 
 export function RoadJourney() {
-  const { locale, dir } = useLocale();
+  const { locale } = useLocale();
   const reduced = useReducedMotion();
 
   const roadRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
+  const glowRef = useRef<SVGPathElement>(null);
+  const hazeRef = useRef<SVGPathElement>(null);
   const leadRef = useRef<SVGPathElement>(null);
   const travelerRef = useRef<HTMLDivElement>(null);
   const cache = useRef<{ total: number; anchors: Anchor[]; gatewayLen: number } | null>(null);
@@ -56,14 +58,20 @@ export function RoadJourney() {
       const road = roadRef.current;
       const svg = svgRef.current;
       const path = pathRef.current;
+      const glow = glowRef.current;
+      const haze = hazeRef.current;
       const lead = leadRef.current;
       const traveler = travelerRef.current;
-      if (!road || !svg || !path || !lead || !traveler) return;
+      if (!road || !svg || !path || !glow || !haze || !lead || !traveler) return;
 
+      const strokes = [path, glow, haze];
       const markerEls = () =>
         Array.from(road.querySelectorAll<HTMLElement>("[data-marker]"));
 
-      /** Build the winding SVG path from the live marker positions. */
+      /** Build the winding SVG path through the scenes and markers.
+       *  The line runs down the page centre — the same axis the scene
+       *  paintings' roads exit on — weaving gently between chapters so the
+       *  painted road and the drawn line read as one continuous road. */
       const buildPath = () => {
         const markers = markerEls();
         if (markers.length === 0) return;
@@ -83,18 +91,19 @@ export function RoadJourney() {
           };
         });
 
-        const cx = anchors[0].x; // markers share the channel/rail axis
-        const amp = isMobile ? 14 : 34; // ≤ channel/2 (48) so the line stays in-channel
-        const lead0 = isMobile ? 40 : 64;
+        const cx = W / 2; // markers sit on the page centre — so does the road
+        const amp = isMobile ? 26 : Math.min(W * 0.14, 170);
 
-        // Node list: centreline anchors with alternating bulges between them.
+        // Node list: centreline anchors with alternating bulges between them,
+        // starting at the very top of the section (the road emerges from the
+        // hero scene's feathered bottom edge).
         const pts: { x: number; y: number }[] = [];
-        pts.push({ x: cx, y: Math.max(0, anchors[0].y - lead0) });
+        pts.push({ x: cx, y: 0 });
         for (let i = 0; i < anchors.length; i++) {
           pts.push({ x: cx, y: anchors[i].y });
           if (i < anchors.length - 1) {
             const ymid = (anchors[i].y + anchors[i + 1].y) / 2;
-            const side = isMobile ? (dir === "rtl" ? -1 : 1) : i % 2 === 0 ? 1 : -1;
+            const side = i % 2 === 0 ? 1 : -1;
             pts.push({ x: cx + side * amp, y: ymid });
           }
         }
@@ -111,7 +120,7 @@ export function RoadJourney() {
         }
 
         svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-        path.setAttribute("d", d);
+        strokes.forEach((p) => p.setAttribute("d", d));
         lead.setAttribute("d", d);
 
         const total = path.getTotalLength();
@@ -130,8 +139,10 @@ export function RoadJourney() {
           if (a.gateway) gatewayLen = hit.l;
         });
 
-        path.style.strokeDasharray = `${total}`;
-        path.style.strokeDashoffset = `${total}`;
+        strokes.forEach((p) => {
+          p.style.strokeDasharray = `${total}`;
+          p.style.strokeDashoffset = `${total}`;
+        });
 
         // Lead glow: a bright segment ending at the gateway, faded in on approach.
         const seg = isMobile ? 90 : 150;
@@ -147,7 +158,9 @@ export function RoadJourney() {
         const c = cache.current;
         if (!c) return;
         const drawn = progress * c.total;
-        path.style.strokeDashoffset = `${c.total - drawn}`;
+        strokes.forEach((p) => {
+          p.style.strokeDashoffset = `${c.total - drawn}`;
+        });
         const pt = path.getPointAtLength(drawn);
         gsap.set(traveler, { x: pt.x, y: pt.y, xPercent: -50, yPercent: -50 });
         const markers = markerEls();
@@ -161,7 +174,9 @@ export function RoadJourney() {
         buildPath();
         const c = cache.current;
         if (c) {
-          path.style.strokeDashoffset = "0";
+          strokes.forEach((p) => {
+            p.style.strokeDashoffset = "0";
+          });
           const end = path.getPointAtLength(c.total);
           gsap.set(traveler, { x: end.x, y: end.y, xPercent: -50, yPercent: -50, autoAlpha: 0 });
           markerEls().forEach((m) => m.classList.add("is-active"));
@@ -184,6 +199,38 @@ export function RoadJourney() {
             scrollTrigger: { trigger: el, start: "top 85%", once: true },
           },
         );
+      });
+
+      // Scenes: slow fade-up + a gentle parallax drift so the paintings feel
+      // like landscapes passing by, not stickers on the page.
+      gsap.utils.toArray<HTMLElement>("[data-scene]").forEach((fig) => {
+        gsap.fromTo(
+          fig,
+          { autoAlpha: 0 },
+          {
+            autoAlpha: 1,
+            duration: 1.4,
+            ease: "power2.out",
+            scrollTrigger: { trigger: fig, start: "top 88%", once: true },
+          },
+        );
+        const img = fig.querySelector("img");
+        if (img) {
+          gsap.fromTo(
+            img,
+            { yPercent: -5 },
+            {
+              yPercent: 5,
+              ease: "none",
+              scrollTrigger: {
+                trigger: fig,
+                start: "top bottom",
+                end: "bottom top",
+                scrub: true,
+              },
+            },
+          );
+        }
       });
 
       // Gateway reveal — weightier: scale + settle (brief §6A).
@@ -249,10 +296,10 @@ export function RoadJourney() {
         document.fonts.ready.then(() => ScrollTrigger.refresh());
       }
     },
-    { scope: roadRef, dependencies: [locale, reduced, dir] },
+    { scope: roadRef, dependencies: [locale, reduced] },
   );
 
-  // ---- Render: stops mapped to Stop / GatewayStop with numbering + alternation.
+  // ---- Render: stops mapped to Stop / GatewayStop with numbering.
   const stops = content[locale].stops;
   let n = 0;
 
@@ -264,19 +311,24 @@ export function RoadJourney() {
       aria-label={content[locale].ui.progressAria}
     >
       <div className="road__channel" aria-hidden="true">
+        {/* Three stacked strokes fake a luminous road without SVG filters
+            (cheap on mobile): wide haze, mid glow, hot core. The lead path
+            keeps its blur — it only lights up near the gateway. */}
         <svg ref={svgRef} className="road__svg" preserveAspectRatio="none">
           <defs>
             <linearGradient id="roadGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#34300F" />
-              <stop offset="0.55" stopColor="#8A7A2E" />
-              <stop offset="1" stopColor="#B7A441" />
+              <stop offset="0" stopColor="#8a5a16" />
+              <stop offset="0.5" stopColor="#e79a2e" />
+              <stop offset="1" stopColor="#ffd479" />
             </linearGradient>
             <filter id="roadGlow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3.5" />
             </filter>
           </defs>
+          <path ref={hazeRef} className="road__haze" stroke="#f5a92c" fill="none" />
+          <path ref={glowRef} className="road__glow" stroke="#ffb845" fill="none" />
           <path ref={pathRef} className="road__path" stroke="url(#roadGrad)" fill="none" />
-          <path ref={leadRef} className="road__lead" stroke="#DED39A" fill="none" filter="url(#roadGlow)" />
+          <path ref={leadRef} className="road__lead" stroke="#ffe9b0" fill="none" filter="url(#roadGlow)" />
         </svg>
         <Traveler ref={travelerRef} />
       </div>
@@ -287,13 +339,11 @@ export function RoadJourney() {
             return <GatewayStop key={stop.key} stop={stop} />;
           }
           n += 1;
-          const side = n % 2 === 1 ? "start" : "end";
           return (
             <Stop
               key={stop.key}
               stop={stop}
               number={formatStopNumber(n, locale)}
-              side={side}
             />
           );
         })}

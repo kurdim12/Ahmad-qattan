@@ -5,37 +5,37 @@ import type { Stop as StopData } from "@/lib/content";
 import { useLocale } from "@/lib/locale";
 import { content } from "@/lib/content";
 import { Marker } from "./Marker";
+import { Scene } from "./Scene";
 import { ServiceGlyph, ArrowForward } from "./icons";
-
-type Side = "start" | "end";
 
 /** Heuristic: only offer expand/collapse when copy is genuinely long (§4.6). */
 const LONG = 240;
 
+/**
+ * A chapter on the night road: full-bleed scene painting (when the stop has
+ * one), then the numbered marker sitting ON the road line, then the card.
+ * Single centred column — the same journey on a phone and a desktop.
+ */
 export function Stop({
   stop,
   number,
-  side,
 }: {
   stop: Exclude<StopData, { type: "gateway" }>;
   number: string;
-  side: Side;
 }) {
   const { locale } = useLocale();
   const ui = content[locale].ui;
   const isContact = "type" in stop && stop.type === "contact";
 
   return (
-    <li
-      data-stop
-      className={`stop stop--${side} ${isContact ? "stop--contact" : ""}`}
-    >
+    <li data-stop className={`stop ${isContact ? "stop--contact" : ""}`}>
+      {stop.scene ? <Scene scene={stop.scene} /> : null}
+      <Marker number={number} />
       <article className="stop__card card reveal">
         <p className="card__station">{stop.station}</p>
         <h2 className="card__label">{stop.label}</h2>
         <StopBody stop={stop} ui={ui} />
       </article>
-      <Marker number={number} />
     </li>
   );
 }

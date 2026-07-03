@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Lateef, Fraunces, Inter } from "next/font/google";
 import { content } from "@/lib/content";
 import "./globals.css";
@@ -56,6 +56,13 @@ export const metadata: Metadata = {
     images: ["/og.svg"],
   },
   robots: { index: true, follow: true },
+};
+
+// Night theme — keeps mobile browser chrome (address bar) in the same world.
+export const viewport: Viewport = {
+  themeColor: "#04060d",
+  width: "device-width",
+  initialScale: 1,
 };
 
 const personJsonLd = {

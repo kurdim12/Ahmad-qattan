@@ -8,6 +8,7 @@ import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { PORTAL, PORTAL_VARIANT } from "@/lib/config";
 import { Marker } from "./Marker";
+import { Scene } from "./Scene";
 import { ArrowForward } from "./icons";
 
 type GatewayData = Extract<Stop, { type: "gateway" }>;
@@ -118,6 +119,7 @@ export function GatewayStop({ stop }: { stop: GatewayData }) {
 
   return (
     <li data-stop data-gateway-stop className="stop stop--gateway is-gateway">
+      {stop.scene ? <Scene scene={stop.scene} /> : null}
       <Marker gateway />
 
       <div className="gateway reveal-gateway">

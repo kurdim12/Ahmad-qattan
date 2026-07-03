@@ -35,11 +35,11 @@ export function Hero() {
         delay: 0.15,
       });
 
-      // Restrained parallax — sky only.
-      const sky = root.current?.querySelector(".hero__sky");
-      if (sky) {
-        gsap.to(sky, {
-          yPercent: 18,
+      // Restrained parallax — the scene painting drifts as you leave the hero.
+      const scene = root.current?.querySelector(".hero__scene img");
+      if (scene) {
+        gsap.to(scene, {
+          yPercent: 10,
           ease: "none",
           scrollTrigger: {
             trigger: root.current,
@@ -60,7 +60,19 @@ export function Hero() {
 
   return (
     <header className="hero" ref={root}>
-      <span className="hero__sky" aria-hidden />
+      {/* Full-bleed night-road painting — the journey starts inside the art,
+          and its glowing road hands off to the drawn line below. */}
+      <figure className="hero__scene" aria-hidden>
+        <img
+          src={`/assets/scenes/${hero.scene.id}.webp`}
+          srcSet={`/assets/scenes/${hero.scene.id}-sm.webp 800w, /assets/scenes/${hero.scene.id}.webp 1600w`}
+          sizes="100vw"
+          alt=""
+          loading="eager"
+          decoding="async"
+          style={{ objectPosition: hero.scene.focus ?? "center" }}
+        />
+      </figure>
 
       <div className="hero__portrait" data-rise>
         {imgError ? (
