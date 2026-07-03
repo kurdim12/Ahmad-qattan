@@ -23,7 +23,9 @@ export interface SceneRef {
     | "training"
     | "fork-arch"
     | "dawn"
-    | "amman";
+    | "amman"
+    | "impact"
+    | "testimonials";
   alt: string;
   focus?: string;
 }

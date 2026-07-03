@@ -10,10 +10,13 @@ import type { SceneRef } from "@/lib/content";
  *   exit  — the x where the road crosses the frame's bottom edge; the drawn
  *           line re-emerges there and carries on down the page.
  */
-export const SCENE_ROADS: Record<
-  SceneRef["id"],
-  { entry: [number, number]; mids?: [number, number][]; exit: number }
-> = {
+export interface RoadMap {
+  entry: [number, number];
+  mids?: [number, number][];
+  exit: number;
+}
+
+export const SCENE_ROADS: Record<SceneRef["id"], RoadMap> = {
   traveler: { entry: [0.57, 0.6], exit: 0.45 },
   childhood: { entry: [0.86, 0.66], mids: [[0.6, 0.78]], exit: 0.35 },
   station: { entry: [0.88, 0.75], mids: [[0.52, 0.85]], exit: 0.18 },
@@ -26,6 +29,73 @@ export const SCENE_ROADS: Record<
   },
   "fork-arch": { entry: [0.47, 0.5], mids: [[0.65, 0.72]], exit: 0.8 },
   amman: { entry: [0.53, 0.52], mids: [[0.62, 0.7]], exit: 0.3 },
+  // These two exist only as portrait paintings (no wide art) — their wide
+  // maps are placeholders and unused until the tall art is in TALL_SCENES.
+  impact: { entry: [0.53, 0.44], exit: 0.4 },
+  testimonials: { entry: [0.62, 0.51], exit: 0.57 },
+};
+
+/**
+ * PORTRAIT (2:3, 1024×1536) variants of the paintings — used on phones so the
+ * art fills the screen instead of being cropped out of a wide frame.
+ *
+ * Drop the files at public/assets/scenes/<id>-tall.webp (1024w) and
+ * <id>-tall-sm.webp (640w), then add the id to TALL_SCENES to activate.
+ * Road fractions below are pre-traced from the portrait paintings.
+ */
+export const TALL_SCENES = new Set<SceneRef["id"]>([]);
+
+export const SCENE_ROADS_TALL: Record<SceneRef["id"], RoadMap> = {
+  traveler: {
+    entry: [0.55, 0.53],
+    mids: [[0.55, 0.62], [0.5, 0.72]],
+    exit: 0.52,
+  },
+  childhood: {
+    entry: [0.49, 0.51],
+    mids: [[0.57, 0.61], [0.6, 0.67], [0.5, 0.76]],
+    exit: 0.45,
+  },
+  station: {
+    entry: [0.55, 0.49],
+    mids: [[0.59, 0.58], [0.63, 0.68], [0.56, 0.8]],
+    exit: 0.52,
+  },
+  pen: {
+    entry: [0.5, 0.54],
+    mids: [[0.45, 0.63], [0.42, 0.73], [0.43, 0.83]],
+    exit: 0.4,
+  },
+  training: {
+    entry: [0.5, 0.45],
+    mids: [[0.44, 0.55], [0.42, 0.63], [0.32, 0.76]],
+    exit: 0.3,
+  },
+  dawn: {
+    entry: [0.53, 0.3],
+    mids: [[0.48, 0.42], [0.56, 0.53], [0.46, 0.65], [0.52, 0.78]],
+    exit: 0.5,
+  },
+  "fork-arch": {
+    entry: [0.51, 0.57],
+    mids: [[0.54, 0.67], [0.49, 0.78]],
+    exit: 0.45,
+  },
+  amman: {
+    entry: [0.5, 0.34],
+    mids: [[0.54, 0.45], [0.49, 0.57], [0.52, 0.7]],
+    exit: 0.48,
+  },
+  impact: {
+    entry: [0.53, 0.44],
+    mids: [[0.52, 0.55], [0.47, 0.65], [0.44, 0.8]],
+    exit: 0.4,
+  },
+  testimonials: {
+    entry: [0.62, 0.51],
+    mids: [[0.6, 0.6], [0.64, 0.7], [0.6, 0.8]],
+    exit: 0.57,
+  },
 };
 
 /**
@@ -44,23 +114,39 @@ export function Scene({
   scene: SceneRef;
   eager?: boolean;
 }) {
+  const tall = TALL_SCENES.has(scene.id);
+  const img = (
+    <img
+      className="scene__img"
+      src={`/assets/scenes/${scene.id}.webp`}
+      srcSet={`/assets/scenes/${scene.id}-sm.webp 800w, /assets/scenes/${scene.id}.webp 1600w`}
+      sizes="100vw"
+      alt={scene.alt}
+      loading={eager ? "eager" : "lazy"}
+      decoding="async"
+      style={{ objectPosition: scene.focus ?? "center" }}
+    />
+  );
   return (
     <figure
       className="scene"
       data-scene
       data-scene-id={scene.id}
       data-focus={scene.focus ?? "50% 50%"}
+      data-tall={tall ? "1" : undefined}
     >
-      <img
-        className="scene__img"
-        src={`/assets/scenes/${scene.id}.webp`}
-        srcSet={`/assets/scenes/${scene.id}-sm.webp 800w, /assets/scenes/${scene.id}.webp 1600w`}
-        sizes="100vw"
-        alt={scene.alt}
-        loading={eager ? "eager" : "lazy"}
-        decoding="async"
-        style={{ objectPosition: scene.focus ?? "center" }}
-      />
+      {tall ? (
+        <picture>
+          {/* Phones get the portrait painting — full composition, no crop. */}
+          <source
+            media="(max-width: 767px)"
+            srcSet={`/assets/scenes/${scene.id}-tall-sm.webp 640w, /assets/scenes/${scene.id}-tall.webp 1024w`}
+          />
+          {img}
+        </picture>
+      ) : (
+        img
+      )}
     </figure>
   );
 }

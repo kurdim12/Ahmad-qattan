@@ -1056,6 +1056,12 @@ p {
    MOBILE POLISH — slimmer light, tighter rhythm, no GPU-heavy blur
    ========================================================================= */
 @media (max-width: 767px) {
+  /* Scenes with a portrait painting show it FULL, edge to edge — the 2:3
+     frame matches the art, so nothing is cropped away. */
+  .scene[data-tall="1"] {
+    aspect-ratio: 2 / 3;
+  }
+
   /* The road light scaled for a narrow screen. */
   .road__haze {
     stroke-width: 11;

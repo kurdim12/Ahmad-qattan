@@ -11,7 +11,7 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 import { formatStopNumber } from "@/lib/numerals";
 import { Stop } from "./Stop";
 import { GatewayStop } from "./GatewayStop";
-import { SCENE_ROADS } from "./Scene";
+import { SCENE_ROADS, SCENE_ROADS_TALL } from "./Scene";
 import { Traveler } from "./Traveler";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -23,8 +23,9 @@ interface Anchor {
   len: number;
 }
 
-/** All paintings share this frame. */
+/** Frame ratios: wide originals and portrait (tall) phone variants. */
 const IMG_RATIO = 1680 / 944;
+const IMG_RATIO_TALL = 1024 / 1536;
 /** .scene__img / .hero__scene img are 112% tall (parallax headroom). */
 const IMG_H_FACTOR = 1.12;
 
@@ -45,14 +46,15 @@ function scenePoint(
   fy: number,
   px: number,
   py: number,
+  ratio: number = IMG_RATIO,
 ): { x: number; y: number } {
   const boxW = fig.width;
   const boxH = fig.height * IMG_H_FACTOR;
   let iw = boxW;
-  let ih = boxW / IMG_RATIO;
+  let ih = boxW / ratio;
   if (ih < boxH) {
     ih = boxH;
-    iw = boxH * IMG_RATIO;
+    iw = boxH * ratio;
   }
   const ox = (boxW - iw) * px;
   const oy = (boxH - ih) * py;
@@ -138,16 +140,30 @@ export function RoadJourney() {
         const anchors: Anchor[] = [];
         const sceneRects: { top: number; h: number }[] = [];
 
+        // Wide painting on desktop, portrait painting on phones — each has its
+        // own frame ratio and its own traced road map.
+        const roadOf = (el: HTMLElement) => {
+          const id = el.dataset.sceneId as keyof typeof SCENE_ROADS | undefined;
+          if (!id) return null;
+          const tall = isMobile && el.dataset.tall === "1";
+          return {
+            meta: tall ? SCENE_ROADS_TALL[id] : SCENE_ROADS[id],
+            ratio: tall ? IMG_RATIO_TALL : IMG_RATIO,
+          };
+        };
+
         // Start where the HERO painting's road crosses its bottom edge — the
         // drawn line literally continues the picture above.
         let startX = cx;
         const heroFig = document.querySelector<HTMLElement>(".hero__scene");
-        const heroMeta = heroFig && SCENE_ROADS[heroFig.dataset.sceneId as keyof typeof SCENE_ROADS];
-        if (heroFig && heroMeta) {
+        const heroRoad = heroFig && roadOf(heroFig);
+        if (heroFig && heroRoad?.meta) {
           const hr = heroFig.getBoundingClientRect();
           const [hpx, hpy] = parseFocus(heroFig.dataset.focus);
           startX = clampX(
-            hr.left - roadRect.left + scenePoint(hr, heroMeta.exit, 1, hpx, hpy).x,
+            hr.left -
+              roadRect.left +
+              scenePoint(hr, heroRoad.meta.exit, 1, hpx, hpy, heroRoad.ratio).x,
           );
         }
         pts.push({ x: startX, y: 0 });
@@ -162,13 +178,14 @@ export function RoadJourney() {
 
         for (const el of els) {
           if (el.hasAttribute("data-scene")) {
-            const meta = SCENE_ROADS[el.dataset.sceneId as keyof typeof SCENE_ROADS];
+            const sceneRoad = roadOf(el);
             const fr = el.getBoundingClientRect();
             const fx0 = fr.left - roadRect.left;
             const fy0 = fr.top - roadRect.top;
-            if (meta) {
+            if (sceneRoad?.meta) {
+              const { meta, ratio } = sceneRoad;
               const [px, py] = parseFocus(el.dataset.focus);
-              const eP = scenePoint(fr, meta.entry[0], meta.entry[1], px, py);
+              const eP = scenePoint(fr, meta.entry[0], meta.entry[1], px, py, ratio);
               const entryX = clampX(fx0 + eP.x);
               // Pre-entry node above the painting: the sideways swing toward
               // the horizon point happens across the tall card zone, so the
@@ -179,10 +196,12 @@ export function RoadJourney() {
               if (preY > prevY + 60) pts.push({ x: entryX, y: preY });
               pts.push({ x: entryX, y: fy0 + Math.max(24, eP.y) });
               for (const [mx, my] of meta.mids ?? []) {
-                const mP = scenePoint(fr, mx, my, px, py);
+                const mP = scenePoint(fr, mx, my, px, py, ratio);
                 pts.push({ x: clampX(fx0 + mP.x), y: fy0 + mP.y });
               }
-              pendingExitX = clampX(fx0 + scenePoint(fr, meta.exit, 1, px, py).x);
+              pendingExitX = clampX(
+                fx0 + scenePoint(fr, meta.exit, 1, px, py, ratio).x,
+              );
               pts.push({ x: pendingExitX, y: fy0 + fr.height });
               sceneRects.push({ top: fy0, h: fr.height });
             }

@@ -7,6 +7,7 @@ import { useGSAP } from "@gsap/react";
 import { content } from "@/lib/content";
 import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import { TALL_SCENES } from "./Scene";
 import { ArrowDown } from "./icons";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -67,16 +68,25 @@ export function Hero() {
         aria-hidden
         data-scene-id={hero.scene.id}
         data-focus={hero.scene.focus ?? "50% 50%"}
+        data-tall={TALL_SCENES.has(hero.scene.id) ? "1" : undefined}
       >
-        <img
-          src={`/assets/scenes/${hero.scene.id}.webp`}
-          srcSet={`/assets/scenes/${hero.scene.id}-sm.webp 800w, /assets/scenes/${hero.scene.id}.webp 1600w`}
-          sizes="100vw"
-          alt=""
-          loading="eager"
-          decoding="async"
-          style={{ objectPosition: hero.scene.focus ?? "center" }}
-        />
+        <picture>
+          {TALL_SCENES.has(hero.scene.id) ? (
+            <source
+              media="(max-width: 767px)"
+              srcSet={`/assets/scenes/${hero.scene.id}-tall-sm.webp 640w, /assets/scenes/${hero.scene.id}-tall.webp 1024w`}
+            />
+          ) : null}
+          <img
+            src={`/assets/scenes/${hero.scene.id}.webp`}
+            srcSet={`/assets/scenes/${hero.scene.id}-sm.webp 800w, /assets/scenes/${hero.scene.id}.webp 1600w`}
+            sizes="100vw"
+            alt=""
+            loading="eager"
+            decoding="async"
+            style={{ objectPosition: hero.scene.focus ?? "center" }}
+          />
+        </picture>
       </figure>
 
       <div className="hero__portrait" data-rise>
