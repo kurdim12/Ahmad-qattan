@@ -50,7 +50,9 @@ async function travel(page) {
 async function report(page, label) {
   const waypoints = await page.$$eval("[data-marker]", (els) => els.length);
   const chapters = await page.$$eval("[data-chapter]", (els) => els.length);
-  const scenes = await page.$$eval(".scene svg", (els) => els.length);
+  const scenes = await page.$$eval(".scene img", (els) =>
+    els.filter((i) => i.naturalWidth > 0).length,
+  );
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );

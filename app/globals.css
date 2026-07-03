@@ -383,11 +383,12 @@ p {
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
   mask-image: linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
 }
-.hero__scene .scene__img {
+.hero__scene img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 112%;
+  object-fit: cover;
   will-change: transform;
 }
 .hero__scene::after {
@@ -584,63 +585,6 @@ p {
   height: 112%;
   object-fit: cover;
   will-change: transform;
-}
-
-/* =============================================================================
-   THE LIVING WORLD — the code-drawn scenes breathe
-   ============================================================================= */
-.tw {
-  animation: twinkle 4.5s ease-in-out infinite;
-}
-@keyframes twinkle {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.7; }
-}
-.fl {
-  animation: lamplight 5s ease-in-out infinite;
-}
-@keyframes lamplight {
-  0%, 100% { opacity: 0.95; }
-  42% { opacity: 0.78; }
-  47% { opacity: 0.92; }
-  74% { opacity: 0.82; }
-}
-.sway {
-  animation: sway 6s ease-in-out infinite;
-}
-@keyframes sway {
-  0%, 100% { transform: rotate(-4deg) translateY(0); }
-  50% { transform: rotate(5deg) translateY(-8px); }
-}
-.drift {
-  animation: drift 9s ease-in-out infinite;
-}
-@keyframes drift {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-  50% { transform: translate(14px, -18px) rotate(6deg); opacity: 0.75; }
-}
-.steam {
-  animation: steam 3.5s ease-in-out infinite;
-}
-@keyframes steam {
-  0% { transform: translateY(0); opacity: 0.7; }
-  100% { transform: translateY(-10px); opacity: 0; }
-}
-.fire {
-  animation: fire 0.9s ease-in-out infinite alternate;
-}
-@keyframes fire {
-  from { transform: scale(1) skewX(0deg); }
-  to { transform: scale(1.06, 1.12) skewX(-2deg); }
-}
-.ember {
-  animation: ember 6s linear infinite;
-  opacity: 0;
-}
-@keyframes ember {
-  0% { transform: translate(0, 0); opacity: 0; }
-  12% { opacity: 0.9; }
-  100% { transform: translate(16px, -110px); opacity: 0; }
 }
 .scene::after {
   content: "";
@@ -949,7 +893,7 @@ p {
    MOBILE
    ============================================================================= */
 @media (max-width: 767px) {
-  .scene {
+  .scene[data-tall="1"] {
     aspect-ratio: 2 / 3;
   }
   .road__haze { stroke-width: 11; }

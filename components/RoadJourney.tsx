@@ -10,7 +10,7 @@ import { content } from "@/lib/content";
 import { useLocale } from "@/lib/locale";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { Chapter } from "./Chapter";
-import { SCENE_ROADS_ART } from "./scenes";
+import { SCENE_ROADS, SCENE_ROADS_TALL } from "./Scene";
 import { Traveler } from "./Traveler";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -22,17 +22,25 @@ interface Anchor {
   len: number;
 }
 
-/** Every code-drawn scene shares a square frame ("slice" = cover crop). */
-const ART_RATIO = 1;
-/** Scene art elements are 112% tall (parallax headroom). */
+/** Frame ratios: wide originals and portrait (tall) phone variants. */
+const IMG_RATIO = 1680 / 944;
+const IMG_RATIO_TALL = 1024 / 1536;
+/** Scene <img> elements are 112% tall (parallax headroom). */
 const IMG_H_FACTOR = 1.12;
 
-/** Map a full-frame fraction to on-screen coords inside the live cover crop. */
+function parseFocus(s: string | undefined): [number, number] {
+  const m = s?.match(/([\d.]+)%\s+([\d.]+)%/);
+  return m ? [parseFloat(m[1]) / 100, parseFloat(m[2]) / 100] : [0.5, 0.5];
+}
+
+/** Map a full-painting fraction to on-screen coords inside the live crop. */
 function scenePoint(
   fig: DOMRect,
   fx: number,
   fy: number,
-  ratio: number = ART_RATIO,
+  px: number,
+  py: number,
+  ratio: number = IMG_RATIO,
 ): { x: number; y: number } {
   const boxW = fig.width;
   const boxH = fig.height * IMG_H_FACTOR;
@@ -42,9 +50,8 @@ function scenePoint(
     ih = boxH;
     iw = boxH * ratio;
   }
-  // "slice" centres the frame in the box.
-  const ox = (boxW - iw) * 0.5;
-  const oy = (boxH - ih) * 0.5;
+  const ox = (boxW - iw) * px;
+  const oy = (boxH - ih) * py;
   return { x: ox + fx * iw, y: oy + fy * ih };
 }
 
@@ -130,18 +137,26 @@ export function RoadJourney() {
         const sceneRects: { top: number; h: number }[] = [];
 
         const roadOf = (el: HTMLElement) => {
-          const id = el.dataset.sceneId as keyof typeof SCENE_ROADS_ART | undefined;
-          return id ? SCENE_ROADS_ART[id] : null;
+          const id = el.dataset.sceneId as keyof typeof SCENE_ROADS | undefined;
+          if (!id) return null;
+          const tall = isMobile && el.dataset.tall === "1";
+          return {
+            meta: tall ? SCENE_ROADS_TALL[id] : SCENE_ROADS[id],
+            ratio: tall ? IMG_RATIO_TALL : IMG_RATIO,
+          };
         };
 
-        // The line begins where the hero scene's road crosses its bottom edge.
+        // The line begins where the hero painting's road crosses its bottom edge.
         let startX = cx;
         const heroFig = document.querySelector<HTMLElement>(".hero__scene");
         const heroRoad = heroFig && roadOf(heroFig);
-        if (heroFig && heroRoad) {
+        if (heroFig && heroRoad?.meta) {
           const hr = heroFig.getBoundingClientRect();
+          const [hpx, hpy] = parseFocus(heroFig.dataset.focus);
           startX = clampX(
-            hr.left - roadRect.left + scenePoint(hr, heroRoad.exit, 1).x,
+            hr.left -
+              roadRect.left +
+              scenePoint(hr, heroRoad.meta.exit, 1, hpx, hpy, heroRoad.ratio).x,
           );
         }
         pts.push({ x: startX, y: 0 });
@@ -155,24 +170,28 @@ export function RoadJourney() {
 
         for (const el of els) {
           if (el.hasAttribute("data-scene")) {
-            const meta = roadOf(el);
+            const sceneRoad = roadOf(el);
             const fr = el.getBoundingClientRect();
             const fx0 = fr.left - roadRect.left;
             const fy0 = fr.top - roadRect.top;
-            if (meta) {
-              const eP = scenePoint(fr, meta.entry[0], meta.entry[1]);
+            if (sceneRoad?.meta) {
+              const { meta, ratio } = sceneRoad;
+              const [px, py] = parseFocus(el.dataset.focus);
+              const eP = scenePoint(fr, meta.entry[0], meta.entry[1], px, py, ratio);
               const entryX = clampX(fx0 + eP.x);
-              // Enter every scene near-vertically: the sideways swing
+              // Enter every painting near-vertically: the sideways swing
               // happens over the text zone above it.
               const prevY = pts[pts.length - 1].y;
               const preY = fy0 - (isMobile ? 80 : 140);
               if (preY > prevY + 60) pts.push({ x: entryX, y: preY });
               pts.push({ x: entryX, y: fy0 + Math.max(24, eP.y) });
               for (const [mx, my] of meta.mids ?? []) {
-                const mP = scenePoint(fr, mx, my);
+                const mP = scenePoint(fr, mx, my, px, py, ratio);
                 pts.push({ x: clampX(fx0 + mP.x), y: fy0 + mP.y });
               }
-              pendingExitX = clampX(fx0 + scenePoint(fr, meta.exit, 1).x);
+              pendingExitX = clampX(
+                fx0 + scenePoint(fr, meta.exit, 1, px, py, ratio).x,
+              );
               pts.push({ x: pendingExitX, y: fy0 + fr.height });
               sceneRects.push({ top: fy0, h: fr.height });
             }
@@ -390,9 +409,9 @@ export function RoadJourney() {
         );
       });
 
-      // ---- Scenes: parallax drift only. ----
+      // ---- Scenes: parallax drift only (no opacity games — lazy-load safe). ----
       gsap.utils.toArray<HTMLElement>("[data-scene]").forEach((fig) => {
-        const img = fig.querySelector(".scene__img");
+        const img = fig.querySelector("img");
         if (img) {
           gsap.fromTo(
             img,
