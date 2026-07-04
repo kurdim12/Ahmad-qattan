@@ -8,7 +8,9 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
 import { Hero } from "./Hero";
 import { RoadJourney } from "./RoadJourney";
 import { LocaleToggle } from "./LocaleToggle";
-import { ScrollProgress } from "./ScrollProgress";
+import { Starfield } from "./Starfield";
+import { Intro } from "./Intro";
+import { ContactPill } from "./ContactPill";
 
 function Shell() {
   const { locale } = useLocale();
@@ -33,7 +35,11 @@ function Shell() {
 
   return (
     <>
-      <div className="page-bg" aria-hidden />
+      <div className="page-bg" aria-hidden="true" />
+      <Starfield />
+      <div className="grain" aria-hidden="true" />
+      <div className="warmth-veil" aria-hidden="true" />
+
       <a href="#main" className="skip">
         {c.ui.skip}
       </a>
@@ -44,14 +50,14 @@ function Shell() {
         </a>
         <LocaleToggle />
       </header>
-      <ScrollProgress />
 
       <main id="main" ref={mainRef}>
         <Hero />
         <RoadJourney />
       </main>
 
-      <footer className="site-footer">{c.ui.footnote}</footer>
+      <ContactPill />
+      <Intro />
     </>
   );
 }

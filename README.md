@@ -1,12 +1,19 @@
-# THE ROAD — Ahmad Qattan portfolio
+# THE ROAD AT NIGHT — Ahmad Qattan portfolio
 
 A bilingual (Arabic-first, RTL + English) personal portfolio built on one idea:
-**the page is a road and the visitor travels down it.** A winding path draws
-itself on scroll, a glowing dot rides the path, milestones light up as you pass,
-the background travels gold → white, and **Think Equality** is a fork in the
-road — a portal that plays a gold-iris transition, then opens the external site.
+**the page is a night road and the visitor travels down it.** Eight night-road
+scene paintings (in `public/assets/scenes/`) are the chapters of the journey;
+a glowing golden line draws itself on scroll and runs THROUGH the paintings —
+each scene feathers into the night sky, so the painted road and the drawn line
+read as one continuous road. A traveler dot rides the line, milestones light up
+as you pass, and **Think Equality** is a fork in the road — a portal that plays
+a gold-iris transition, then opens the external site.
 
-Brand: Lateef (Arabic) / Fraunces + Inter (English), gold `#B7A441` + white.
+The layout is one centred column — the same journey on a phone and a desktop
+(mobile-first; scenes show a taller 7:8 crop with per-scene focus points).
+
+Brand: Lateef (Arabic) / Fraunces + Inter (English), road-light gold `#F0A83A`
+on night `#04060D`.
 
 ---
 
@@ -61,22 +68,26 @@ plain static assets — no server runtime.
 
 ```
 app/
-  layout.tsx        Root layout: next/font, SEO metadata, hreflang, Person JSON-LD
+  layout.tsx        Root layout: next/font (Reem Kufi / IBM Plex Arabic /
+                    Fraunces / Inter), SEO metadata, hreflang, Person JSON-LD
   page.tsx          Renders <App/>
-  globals.css       Design tokens + the overlap-fix timeline + all interaction CSS
+  globals.css       The design language: typography-first, no cards, ink motion
   icon.svg          Favicon
 components/
-  App.tsx           Client root: LocaleProvider + chrome + locale crossfade
-  Hero.tsx          Hero / page-load sequence + restrained sky parallax
-  RoadJourney.tsx   THE ENGINE — builds the path, draws on scroll, rides the
-                    traveler, lights markers, drives the gateway approach, Lenis
-  Stop.tsx          Renders a milestone card by type (+ "expand if long")
-  GatewayStop.tsx   Think Equality gateway + the portal sequence (iris / curtain)
-  Marker.tsx        Number-in-disc marker (and the ✦ gateway marker)
-  Traveler.tsx      The glowing dot
+  App.tsx           Client root: chrome + atmosphere layers (starfield, grain,
+                    warmth veil) + locale crossfade
+  Hero.tsx          The landmark: monumental name over the traveler painting
+  RoadJourney.tsx   THE ENGINE — one road tracing the painted roads, ink text
+                    reveals (SplitText), carve reveals, warmth after the arch,
+                    comet traveler synced to the eyeline, Lenis
+  Chapter.tsx       A chapter: painting → waypoint → carved word → ink text
+                    (+ craft list / figures / voices / crossing / arrival)
+  Scene.tsx         A painting, feathered into the sky + its road maps
+  Starfield.tsx     Canvas night sky: twinkling stars + drifting dust
+  Intro.tsx         The opening: the road writes itself across the dark
+  ContactPill.tsx   The quiet escape hatch (persistent contact)
+  Traveler.tsx      The light on the road
   LocaleToggle.tsx  AR/EN corner toggle
-  ScrollProgress.tsx Slim progress bar under the top bar
-  icons.tsx         Service / arrow / portal glyphs
 lib/
   content.ts        ★ SINGLE SOURCE OF TRUTH for all copy (AR + EN)
   config.ts         Portal variant + timing knobs
@@ -106,7 +117,15 @@ client edits in one place. All copy is placeholder and marked `[محتوى مب�
 | Stats / quotes / values / ventures | the typed `stats` / `quotes` / `chips` stops |
 
 > Milestone numbers are generated automatically (Eastern-Arabic in AR, Western in
-> EN); the gateway is a ✦, never a number. Card sides alternate automatically.
+> EN); the gateway is a ✦, never a number.
+
+### Scenes (the paintings)
+
+Each stop may carry a `scene` in `content.ts`: `{ id, alt, focus }`. `id` maps
+to `public/assets/scenes/<id>.webp` (1600w) + `<id>-sm.webp` (800w); `focus` is
+the CSS `object-position` used for the taller mobile crop. Source art lives in
+`public/assets/source/` — regenerate the optimized WebP pair with `sharp` if a
+painting changes.
 
 ### The Think Equality URL
 
@@ -119,21 +138,21 @@ then opens it in a new tab (`rel="noopener noreferrer"`).
 
 ## Tuning
 
-### Gold intensity (the gold → white journey)
+### Night + road light
 
-In [`app/globals.css`](app/globals.css), the `:root` block defines the page
-gradient stops:
+In [`app/globals.css`](app/globals.css), the `:root` block defines the world:
 
 ```css
---grad-0: #b7a441;  /* top — the starting gold (raise/lower intensity here) */
---grad-1: #c4b561;
---grad-2: #d6cb8c;
-/* … → */
---grad-6: #ffffff;  /* bottom — clarity / white */
+--night-0: #04060d;  /* deepest sky (page background) */
+--night-1: #0a1020;  /* card glass */
+--gold:    #f0a83a;  /* the road's light — traveler, markers, CTAs */
+--gold-soft: #ffd479;
 ```
 
-Make the start more intense by darkening `--grad-0/1/2`; soften it by lightening
-them. The road stroke gradient and CTA golds use the brand tokens above them.
+The drawn road is three stacked SVG strokes (haze / glow / core — tuned in the
+`.road__haze/.road__glow/.road__path` rules) so it glows like the painted roads
+without per-frame SVG filters. `mix-blend-mode: screen` on the road layer makes
+the line behave like light over the artwork.
 
 ### Portal effect — iris vs curtain
 
@@ -162,8 +181,8 @@ Timings are in the same file (`PORTAL`).
 - `prefers-reduced-motion` is fully honored: no Lenis, no scrubbed draw — the
   finished road shows with every marker lit, cards are visible, and the portal
   **just opens the link**. All CSS animations/transitions are neutralized.
-- WCAG AA: body text is ink (not gold/white). Hero text on the brightest gold is
-  ink (~5.9:1). Visible `:focus-visible`, a skip link, full keyboard nav,
+- WCAG AA: body text is warm cream on night (>10:1); text on gold buttons is
+  dark ink. Visible `:focus-visible`, a skip link, full keyboard nav,
   semantic landmarks (`header` / `main` / `footer`, headings, `section`).
 - External links use `target="_blank" rel="noopener noreferrer"`.
 
@@ -178,8 +197,10 @@ Timings are in the same file (`PORTAL`).
 
 ## Performance
 
-Static export, `next/font` (swap, no layout shift), no raster images, GSAP +
-Lenis as the only animation deps, compositor-friendly animations. Run Lighthouse
+Static export, `next/font` (swap, no layout shift), GSAP + Lenis as the only
+animation deps, compositor-friendly animations. The 8 scene paintings ship as
+optimized WebP (~380 KB total for the 1600w set, with 800w variants via
+`srcset`; everything below the hero is `loading="lazy"`). Run Lighthouse
 against the built output (`npm run preview`) — target ≥ 90 perf + a11y.
 
 ## Optional smoke test

@@ -1,13 +1,22 @@
-import type { Metadata } from "next";
-import { Lateef, Fraunces, Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Reem_Kufi, IBM_Plex_Sans_Arabic, Fraunces, Inter } from "next/font/google";
 import { content } from "@/lib/content";
 import "./globals.css";
 
 // next/font → self-hosted, font-display:swap, zero layout shift.
-const lateef = Lateef({
+// Reem Kufi: the display voice — Kufic is the script of carved monuments,
+// which is exactly what the chapter words and the hero name should feel like.
+// IBM Plex Sans Arabic: body copy that disappears into the experience.
+const reemKufi = Reem_Kufi({
   subsets: ["arabic"],
-  weight: ["400", "500", "700", "800"],
-  variable: "--font-lateef",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-kufi",
+  display: "swap",
+});
+const plexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-plex-ar",
   display: "swap",
 });
 const fraunces = Fraunces({
@@ -58,6 +67,13 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+// Night theme — keeps mobile browser chrome (address bar) in the same world.
+export const viewport: Viewport = {
+  themeColor: "#04060d",
+  width: "device-width",
+  initialScale: 1,
+};
+
 const personJsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
@@ -74,7 +90,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ar" dir="rtl" className="lang-ar">
-      <body className={`${lateef.variable} ${fraunces.variable} ${inter.variable}`}>
+      <body
+        className={`${reemKufi.variable} ${plexArabic.variable} ${fraunces.variable} ${inter.variable}`}
+      >
         {children}
         <script
           type="application/ld+json"
